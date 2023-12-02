@@ -2,6 +2,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.io.path.Path
 import kotlin.io.path.readLines
+import kotlin.time.measureTimedValue
 
 /**
  * Reads lines from the given input txt file.
@@ -46,6 +47,19 @@ fun CharSequence.substringOrNull(startIndex: Int, endIndex: Int): String? {
         null
     } else {
         substring(startIndex, endIndex)
+    }
+}
+
+/**
+ * Compares performance specifically in the context of Advent of Code.
+ */
+fun comparePerformance(name: String, vararg implementations: () -> Int) {
+    implementations.withIndex().forEach { (idx, implementation) ->
+        measureTimedValue {
+            implementation()
+        }.also {
+            println("$name implementation ${idx + 1} took ${it.duration}; result: ${it.value}")
+        }
     }
 }
 

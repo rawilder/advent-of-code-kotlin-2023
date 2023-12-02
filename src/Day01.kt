@@ -1,5 +1,3 @@
-import kotlin.time.measureTime
-
 fun main() {
     fun part1(input: List<String>): Int {
         return input.sumOf {
@@ -67,11 +65,5 @@ fun main() {
 
     val input = readInput("Day01")
     part1(input).println()
-    val part2Time = measureTime { part2(input).println() }.also {
-        println("part2: $it")
-    }
-    val part2OptimizedTime = measureTime { part2Optimized(input).println() }.also {
-        println("part2Optimized: $it")
-    }
-    println("part2Optimized is ${part2Time / part2OptimizedTime} times faster")
+    comparePerformance("part2", { part2(input) }, { part2Optimized(input) })
 }
