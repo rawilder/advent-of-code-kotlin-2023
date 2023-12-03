@@ -2,6 +2,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.io.path.Path
 import kotlin.io.path.readLines
+import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
 /**
@@ -63,6 +64,19 @@ fun comparePerformance(name: String, vararg implementations: () -> Int) {
     }
 }
 
+/**
+ * Converts a list of strings into a matrix of characters.
+ */
+fun matrixFromStringList(input: List<String>): List<List<Char>> {
+    return input.map { line ->
+        line.toList()
+    }
+}
+
+fun Iterable<Duration>.averageInMillis() = map { it.inWholeMilliseconds }.average()
+
+fun Map<Int, Set<Int>>.isVisited(x: Int, y: Int) = this[y]?.contains(x) ?: false
+
 object Utils {
     val digitStringsToInts = mapOf(
         "one" to 1,
@@ -76,3 +90,5 @@ object Utils {
         "nine" to 9,
     )
 }
+
+data class Coord(val x: Int, val y: Int)
