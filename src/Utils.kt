@@ -11,6 +11,11 @@ import kotlin.time.measureTimedValue
 fun readInput(name: String) = Path("src/$name.txt").readLines()
 
 /**
+ * Reads lines from the given filename.
+ */
+fun readFile(name: String) = Path("src/$name").readLines()
+
+/**
  * Converts string to md5 hash.
  */
 fun String.md5() = BigInteger(1, MessageDigest.getInstance("MD5").digest(toByteArray()))
