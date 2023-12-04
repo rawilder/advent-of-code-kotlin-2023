@@ -73,9 +73,26 @@ fun matrixFromStringList(input: List<String>): List<List<Char>> {
     }
 }
 
-fun Iterable<Duration>.averageInMillis() = map { it.inWholeMilliseconds }.average()
+/**
+ * Int power function for positive exponents.
+ * Returns the result as Long to avoid overflow.
+ */
+fun pow(base: Int, exponent: Int): Long {
+    require(exponent >= 0)
+    tailrec fun recursivePow(base: Long, exponent: Long, result: Long): Long {
+        return when {
+            exponent == 0L -> result
+            else -> recursivePow(base, exponent - 1, result * base)
+        }
+    }
 
-fun Map<Int, Set<Int>>.isVisited(x: Int, y: Int) = this[y]?.contains(x) ?: false
+    return recursivePow(base.toLong(), exponent.toLong(), 1)
+}
+
+/**
+ * Returns the average of the given durations in milliseconds.
+ */
+fun Iterable<Duration>.averageInMillis() = map { it.inWholeMilliseconds }.average()
 
 object Utils {
     val digitStringsToInts = mapOf(
