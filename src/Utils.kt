@@ -191,6 +191,8 @@ object Utils {
         "eight" to 8,
         "nine" to 9,
     )
+
+    val whitespaceRegex = Regex("\\s+")
 }
 
 data class Coord(val x: Int, val y: Int)
