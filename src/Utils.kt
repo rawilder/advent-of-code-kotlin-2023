@@ -59,7 +59,7 @@ fun CharSequence.substringOrNull(startIndex: Int, endIndex: Int): String? {
 /**
  * Compares performance specifically in the context of Advent of Code.
  */
-fun comparePerformance(name: String, vararg implementations: () -> Int) {
+fun comparePerformance(name: String, vararg implementations: () -> Number) {
     implementations.withIndex().forEach { (idx, implementation) ->
         measureTimedValue {
             implementation()
@@ -92,6 +92,86 @@ fun pow(base: Int, exponent: Int): Long {
     }
 
     return recursivePow(base.toLong(), exponent.toLong(), 1)
+}
+
+/**
+ * Returns the result of the block if the condition is true, otherwise null.
+ */
+inline fun <reified T> (() -> T).takeIf(condition: Boolean): T? {
+    return if (condition) {
+        this()
+    } else null
+}
+
+/**
+ * Returns if this range is before the other range with no overlap.
+ */
+fun LongRange.liesBefore(other: LongRange): Boolean {
+    return this.last < other.first
+}
+
+/**
+ * Returns if this range is after the other range with no overlap.
+ */
+fun LongRange.liesAfter(other: LongRange): Boolean {
+    return this.first > other.last
+}
+
+/**
+ * Returns if this range overlaps with the other range, whether entirely, partially, or is a subrange of the other.
+ */
+fun LongRange.overlaps(other: LongRange): Boolean {
+    return when {
+        this.last < other.first || this.first > other.last -> {
+            false
+        }
+        else -> {
+            true
+        }
+    }
+}
+
+/**
+ * Returns the intersection of this range with the other range, or null if there is no intersection.
+ *
+ * It limits the intersections to the minimum bounds, i.e. (0..5).intersectsIn(4..10) -> Pair(4, 5)
+ */
+fun LongRange.intersectionsIn(other: LongRange): Pair<Long, Long>? {
+    // should return a pair (start, end) of where this range intersects with other range
+    // [0..5].intersectsIn(4..10) -> null..5
+    // [0..5].intersectsIn(2..3) -> 2..3
+    return when {
+        this.last < other.first || this.first > other.last -> {
+            null
+        }
+        else -> {
+            val start = maxOf(this.first, other.first)
+            val end = minOf(this.last, other.last)
+            start to end
+        }
+    }
+}
+
+fun collapseRanges(ranges: List<LongRange>): List<LongRange> {
+    val sortedRanges = ranges.sortedBy { it.first }
+    val result = sortedRanges.fold(emptyList<LongRange>()) { acc, range ->
+        if (acc.isEmpty()) {
+            listOf(range)
+        } else {
+            when {
+                range.first > acc.last().last + 1 -> {
+                    acc + listOf(range)
+                }
+                range.last > acc.last().last -> {
+                    acc.dropLast(1) + listOf(acc.last().first..range.last)
+                }
+                else -> {
+                    acc
+                }
+            }
+        }
+    }
+    return result
 }
 
 /**
