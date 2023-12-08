@@ -1,7 +1,12 @@
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withContext
 import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.io.path.Path
 import kotlin.io.path.readLines
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
@@ -178,6 +183,42 @@ fun collapseRanges(ranges: List<LongRange>): List<LongRange> {
  * Returns the average of the given durations in milliseconds.
  */
 fun Iterable<Duration>.averageInMillis() = map { it.inWholeMilliseconds }.average()
+
+/**
+ * Maps in parallel using the default dispatcher.
+ */
+suspend fun <T, R> Iterable<T>.mapAsync(block: suspend (T) -> R): List<R> {
+    return withContext(kotlinx.coroutines.Dispatchers.Default) {
+        map { element ->
+            async {
+                block(element)
+            }
+        }
+    }.awaitAll()
+}
+
+/**
+ * return the greatest common divisor of two numbers
+ */
+tailrec fun Long.gcd(other: Long): Long {
+    return if (other == 0L) {
+        this
+    } else {
+        min(this, other).gcd(max(this, other) % min(this, other))
+    }
+}
+
+/**
+ * return the least common multiple of two numbers
+ */
+fun Long.lcm(other: Long): Long {
+    return this * other / this.gcd(other)
+}
+
+// return the least common multiple of a list of numbers
+fun List<Long>.lcm(): Long {
+    return reduce { acc, l -> acc.lcm(l) }
+}
 
 object Utils {
     val digitStringsToInts = mapOf(
