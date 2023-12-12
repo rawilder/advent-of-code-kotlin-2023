@@ -1,3 +1,7 @@
+import util.println
+import util.file.readInput
+import util.shouldBe
+
 fun main() {
     fun part1(input: List<String>): Long {
         val report = Report.fromInput(input)

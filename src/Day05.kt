@@ -1,3 +1,13 @@
+import util.collection.collapseRanges
+import util.metrics.comparePerformance
+import util.collection.intersectionsIn
+import util.collection.liesBefore
+import util.collection.overlaps
+import util.println
+import util.file.readInput
+import util.shouldBe
+import util.takeIf
+
 fun main() {
     fun part1(input: List<String>): Long {
         val almanac = parseAlmanac(input)

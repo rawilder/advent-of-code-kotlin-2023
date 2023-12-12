@@ -1,3 +1,10 @@
+import util.metrics.comparePerformance
+import util.println
+import util.file.readInput
+import util.collection.substringOrNull
+import util.collection.windowedSequenceVariableSize
+import util.digitStringsToInts
+
 fun main() {
     fun part1(input: List<String>): Int {
         return input.sumOf {
@@ -13,7 +20,7 @@ fun main() {
                 .map {
                     when {
                         it.length == 1 && it.first().isDigit() -> it
-                        else -> Utils.digitStringsToInts[it] ?: ""
+                        else -> digitStringsToInts[it] ?: ""
                     }
                 }
                 .joinToString("")
@@ -33,17 +40,17 @@ fun main() {
                     }
                     else -> {
                         line.substringOrNull(pos, pos + 3)?.let {
-                            Utils.digitStringsToInts[it]?.let { digit ->
+                            digitStringsToInts[it]?.let { digit ->
                                 result.append(digit)
                             }
                         }
                         line.substringOrNull(pos, pos + 4)?.let {
-                            Utils.digitStringsToInts[it]?.let { digit ->
+                            digitStringsToInts[it]?.let { digit ->
                                 result.append(digit)
                             }
                         }
                         line.substringOrNull(pos, pos + 5)?.let {
-                            Utils.digitStringsToInts[it]?.let { digit ->
+                            digitStringsToInts[it]?.let { digit ->
                                 result.append(digit)
                             }
                         }

@@ -1,3 +1,5 @@
+import util.shouldBe
+
 fun main() {
     part2("""
         ...........

@@ -1,7 +1,10 @@
 import Day06.distanceRegex
 import Day06.myBoat
 import Day06.timeRegex
-import Utils.whitespaceRegex
+import util.whitespaceRegex
+import util.metrics.comparePerformance
+import util.println
+import util.file.readInput
 
 fun main() {
     fun part1(input: List<String>): Int {

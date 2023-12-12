@@ -1,3 +1,6 @@
+import util.println
+import util.file.readInput
+
 fun main() {
     fun part1(input: List<String>): Int {
         return input.size

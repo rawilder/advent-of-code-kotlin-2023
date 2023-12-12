@@ -1,6 +1,10 @@
+package util
+
+import util.collection.collapseRanges
+
 inline infix fun <reified T> T.shouldBe (expected: T): T {
     if (this != expected) {
-        throw AssertionError("Expected $expected but got $this")
+        throw AssertionError("Expected \n$expected but got \n$this")
     } else {
         println("Test passed: $this")
         return this

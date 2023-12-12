@@ -1,3 +1,9 @@
+import util.metrics.averageInMillis
+import util.metrics.comparePerformance
+import util.collection.matrixFromStringList
+import util.println
+import util.file.readInput
+import java.awt.Point
 import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
@@ -91,18 +97,18 @@ fun main() {
     part2(input).println()
 }
 
-data class VisitResult(val numbers: List<Int>, val visited: Set<Coord>)
+data class VisitResult(val numbers: List<Int>, val visited: Set<Point>)
 
-fun findAdjacentNumbersFunctionally(matrix: List<List<Char>>, x: Int, y: Int, visited: Set<Coord>): VisitResult = measureTimedValue {
+fun findAdjacentNumbersFunctionally(matrix: List<List<Char>>, x: Int, y: Int, visited: Set<Point>): VisitResult = measureTimedValue {
     val adjacentCoords = listOf(
-        Coord(x - 1, y - 1),
-        Coord(x, y - 1),
-        Coord(x + 1, y - 1),
-        Coord(x - 1, y),
-        Coord(x + 1, y),
-        Coord(x - 1, y + 1),
-        Coord(x, y + 1),
-        Coord(x + 1, y + 1),
+        Point(x - 1, y - 1),
+        Point(x, y - 1),
+        Point(x + 1, y - 1),
+        Point(x - 1, y),
+        Point(x + 1, y),
+        Point(x - 1, y + 1),
+        Point(x, y + 1),
+        Point(x + 1, y + 1),
     ).filter { it !in visited && it.y >= 0 && it.y < matrix.size && it.x >= 0 && it.x < matrix[it.y].size && matrix[it.y][it.x].isDigit() }
 
     val adjacentNumbers = adjacentCoords.fold(VisitResult(emptyList(), visited)) { acc, coord ->
@@ -127,7 +133,7 @@ fun findContiguousDigitsOnRowFunctionally(matrix: List<List<Char>>, x: Int, y: I
         listOf(
             matrix[y].subList(leftX, rightX + 1).joinToString("").toInt()
         ),
-        (leftX..rightX).map { Coord(it, y) }.toSet()
+        (leftX..rightX).map { Point(it, y) }.toSet()
     )
 }.also {
     Stats.part1FunctionalFindContiguousDigitsOnRow.add(it.duration)

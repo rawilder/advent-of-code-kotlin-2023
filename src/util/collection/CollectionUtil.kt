@@ -1,36 +1,9 @@
+package util.collection
+
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-import java.math.BigInteger
-import java.security.MessageDigest
-import kotlin.io.path.Path
-import kotlin.io.path.readLines
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.time.Duration
-import kotlin.time.measureTimedValue
-
-/**
- * Reads lines from the given input txt file.
- */
-fun readInput(name: String) = Path("src/$name.txt").readLines()
-
-/**
- * Reads lines from the given filename.
- */
-fun readFile(name: String) = Path("src/$name").readLines()
-
-/**
- * Converts string to md5 hash.
- */
-fun String.md5() = BigInteger(1, MessageDigest.getInstance("MD5").digest(toByteArray()))
-    .toString(16)
-    .padStart(32, '0')
-
-/**
- * The cleaner shorthand for printing output.
- */
-fun Any?.println() = println(this)
 
 /**
  * Returns a sequence of substrings, stepping by one character, and yielding substrings of the given sizes in the order
@@ -59,53 +32,6 @@ fun CharSequence.substringOrNull(startIndex: Int, endIndex: Int): String? {
     } else {
         substring(startIndex, endIndex)
     }
-}
-
-/**
- * Compares performance specifically in the context of Advent of Code.
- */
-fun comparePerformance(name: String, vararg implementations: () -> Number) {
-    implementations.withIndex().forEach { (idx, implementation) ->
-        measureTimedValue {
-            implementation()
-        }.also {
-            println("$name implementation ${idx + 1} took ${it.duration}; result: ${it.value}")
-        }
-    }
-}
-
-/**
- * Converts a list of strings into a matrix of characters.
- */
-fun matrixFromStringList(input: List<String>): List<List<Char>> {
-    return input.map { line ->
-        line.toList()
-    }
-}
-
-/**
- * Int power function for positive exponents.
- * Returns the result as Long to avoid overflow.
- */
-fun pow(base: Int, exponent: Int): Long {
-    require(exponent >= 0)
-    tailrec fun recursivePow(base: Long, exponent: Long, result: Long): Long {
-        return when {
-            exponent == 0L -> result
-            else -> recursivePow(base, exponent - 1, result * base)
-        }
-    }
-
-    return recursivePow(base.toLong(), exponent.toLong(), 1)
-}
-
-/**
- * Returns the result of the block if the condition is true, otherwise null.
- */
-inline fun <reified T> (() -> T).takeIf(condition: Boolean): T? {
-    return if (condition) {
-        this()
-    } else null
 }
 
 /**
@@ -180,22 +106,10 @@ fun collapseRanges(ranges: List<LongRange>): List<LongRange> {
 }
 
 /**
- * Returns the average of the given durations in milliseconds.
- */
-fun Iterable<Duration>.averageInMillis() = map { it.inWholeMilliseconds }.average()
-
-fun Map<String, List<Duration>>.printAverageInMillis() {
-    println("Average times:")
-    forEach { (name, durations) ->
-        println("$name: ${durations.averageInMillis()}ms / ${durations.size}")
-    }
-}
-
-/**
  * Maps in parallel using the default dispatcher.
  */
 suspend fun <T, R> Iterable<T>.mapAsync(block: suspend (T) -> R): List<R> {
-    return withContext(kotlinx.coroutines.Dispatchers.Default) {
+    return withContext(Dispatchers.Default) {
         map { element ->
             async {
                 block(element)
@@ -205,42 +119,31 @@ suspend fun <T, R> Iterable<T>.mapAsync(block: suspend (T) -> R): List<R> {
 }
 
 /**
- * return the greatest common divisor of two numbers
+ * Transposes an iterable of iterables.
  */
-tailrec fun Long.gcd(other: Long): Long {
-    return if (other == 0L) {
-        this
-    } else {
-        min(this, other).gcd(max(this, other) % min(this, other))
+@JvmName("iterableTranspose")
+fun <T> Iterable<Iterable<T>>.transpose(): List<List<T>> {
+    return map { it.toList() }.fold(emptyList()) { acc, list ->
+        if (acc.isEmpty()) {
+            list.map { listOf(it) }
+        } else {
+            acc.zip(list) { a, b -> a + b }
+        }
     }
 }
 
 /**
- * return the least common multiple of two numbers
+ * Transposes a list of strings because CharSequences are not Iterable<Char>.
  */
-fun Long.lcm(other: Long): Long {
-    return this * other / this.gcd(other)
+fun Iterable<String>.transpose(): List<String> {
+    return map { it.asIterable() }.transpose().map { it.joinToString("") }
 }
 
-// return the least common multiple of a list of numbers
-fun List<Long>.lcm(): Long {
-    return reduce { acc, l -> acc.lcm(l) }
+/**
+ * Converts a list of strings into a matrix of characters.
+ */
+fun matrixFromStringList(input: List<String>): List<List<Char>> {
+    return input.map { line ->
+        line.toList()
+    }
 }
-
-object Utils {
-    val digitStringsToInts = mapOf(
-        "one" to 1,
-        "two" to 2,
-        "three" to 3,
-        "four" to 4,
-        "five" to 5,
-        "six" to 6,
-        "seven" to 7,
-        "eight" to 8,
-        "nine" to 9,
-    )
-
-    val whitespaceRegex = Regex("\\s+")
-}
-
-data class Coord(val x: Int, val y: Int)

@@ -1,3 +1,10 @@
+import util.math.gcd
+import util.math.lcm
+import util.collection.mapAsync
+import util.println
+import util.file.readInput
+import util.shouldBe
+
 suspend fun main() {
     fun part1(input: List<String>): Int {
         val routeMap = RouteMap.fromString(input)

@@ -1,3 +1,8 @@
+import util.metrics.comparePerformance
+import util.println
+import util.file.readInput
+import util.shouldBe
+
 fun part2(input: List<String>): Int {
     val pipeMap = PipeMap.fromInput(input)
     println("")

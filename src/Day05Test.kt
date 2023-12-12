@@ -1,3 +1,7 @@
+import util.file.readInput
+import util.shouldBe
+import util.shouldBeRanges
+
 fun main() {
     println("testing original implementation")
     testInputWith(AlmanacMap::destinationRangesForSourceRanges)

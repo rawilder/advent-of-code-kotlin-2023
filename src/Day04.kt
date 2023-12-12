@@ -1,3 +1,7 @@
+import util.math.pow
+import util.println
+import util.file.readInput
+
 fun main() {
     fun part1(input: List<String>): Long {
         return input.sumOf {
