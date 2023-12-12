@@ -184,6 +184,13 @@ fun collapseRanges(ranges: List<LongRange>): List<LongRange> {
  */
 fun Iterable<Duration>.averageInMillis() = map { it.inWholeMilliseconds }.average()
 
+fun Map<String, List<Duration>>.printAverageInMillis() {
+    println("Average times:")
+    forEach { (name, durations) ->
+        println("$name: ${durations.averageInMillis()}ms / ${durations.size}")
+    }
+}
+
 /**
  * Maps in parallel using the default dispatcher.
  */
