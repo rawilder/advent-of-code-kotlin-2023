@@ -19,7 +19,11 @@ fun main() {
     }
 
     fun part2(input: List<String>): Int {
-        return input.size
+        val hotSpringRecords = HotSpringRecords.fromInput(input)
+        val result = hotSpringRecords.records.map { record ->
+            record.unfold(5).possibleStates()
+        }
+        return result.sumOf { it.size }
     }
 
     Record.fromLine("..?##????????.?#?.? 10,2").let { r ->
@@ -75,6 +79,13 @@ data class Record(
     val state: List<HotSpringState>,
     val contiguousGroupsOfDamaged: List<Int>
 ) {
+
+    fun unfold(n: Int): Record {
+        return copy(
+            state = List(n) { state }.flatten(),
+            contiguousGroupsOfDamaged = List(n) { contiguousGroupsOfDamaged }.flatten()
+        )
+    }
 
     fun validateState(stateToValidate: List<HotSpringState>) {
         println("")
@@ -133,6 +144,7 @@ data class Record(
     private tailrec fun possibleStatesRecursive(currentStates: List<List<HotSpringState>>, groupSizes: List<Int>, results: List<List<HotSpringState>> = emptyList()): List<List<HotSpringState>> {
         val groupSize = groupSizes.first()
         val possibleGroupings = currentStates
+            .filter { it.hasEnoughRoomForGrouping(groupSizes) }
             .filter { it.canHaveGrouping(groupSize) }
             .flatMap { it.potentialGroupings(groupSize, groupSizes.drop(1).isEmpty()) }
             .distinct()
@@ -202,11 +214,28 @@ data class Record(
                 }
         }
 
+        private fun List<HotSpringState>.hasEnoughRoomForGrouping(ns: List<Int>): Boolean {
+            val lastMaybeDamaged = this.indexOfLast { it == HotSpringState.MAYBE_DAMAGED }
+            return (this.withIndex().count { (lastMaybeDamaged == -1 || it.index > lastMaybeDamaged)
+                    && it.value == HotSpringState.DAMAGED || it.value == HotSpringState.UNKNOWN
+            }.let { numDamagedOrUnknown ->
+                (numDamagedOrUnknown >= ns.sum() + ns.size - 2).also {
+//                    if (!it) println("not enough room for ${ns.sum() + ns.size} in $numDamagedOrUnknown")
+                }
+            })
+        }
+
         private fun condition(n: Int, sublist: List<HotSpringState>): Boolean {
             val canHoldNDamaged by lazy { sublist.count { it == HotSpringState.DAMAGED || it == HotSpringState.UNKNOWN } == n }
             val hasNoMaybeDamaged by lazy { sublist.count { it == HotSpringState.MAYBE_DAMAGED } == 0 }
             val isAllDamaged by lazy { sublist.count { it == HotSpringState.DAMAGED } == n }
             return isAllDamaged || (canHoldNDamaged && hasNoMaybeDamaged)
+        }
+
+        private fun shouldNotPrune(state: List<HotSpringState>, groupSizes: List<Int>): Boolean {
+            state.takeLastWhile { it != HotSpringState.MAYBE_DAMAGED }
+
+            return TODO()
         }
     }
 }
