@@ -119,6 +119,38 @@ suspend fun <T, R> Iterable<T>.mapAsync(block: suspend (T) -> R): List<R> {
 }
 
 /**
+ * Returns if this list contains the given sublist.
+ */
+fun <T> List<T>.containsSublist(sublist: List<T>): Boolean {
+    return windowed(sublist.size).any { it == sublist }
+}
+
+/**
+ * Returns the index of the first occurrence of the given sublist, or -1 if it is not found.
+ */
+fun <T> List<T>.indexOfSublist(sublist: List<T>): Int {
+    return windowed(sublist.size).indexOfFirst { it == sublist }
+}
+
+fun <T> List<T>.indexesOfSublist(sublist: List<T>): List<Int> {
+    return windowed(sublist.size).mapIndexedNotNull { index, it ->
+        if (it == sublist) index else null
+    }
+}
+
+fun <T> List<T>.indexesOfSublistsWithCondition(n: Int, condition: (List<T>) -> Boolean): List<Int> {
+    return windowed(n).mapIndexedNotNull { index, it ->
+        if (condition(it)) index else null
+    }
+}
+
+fun <T> List<T>.indexesOfCondition(condition: (T) -> Boolean): List<Int> {
+    return mapIndexedNotNull { index, it ->
+        if (condition(it)) index else null
+    }
+}
+
+/**
  * Transposes an iterable of iterables.
  */
 @JvmName("iterableTranspose")
