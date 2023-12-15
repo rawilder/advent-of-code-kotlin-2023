@@ -83,6 +83,9 @@ fun LongRange.intersectionsIn(other: LongRange): Pair<Long, Long>? {
     }
 }
 
+/**
+ * Returns ranges collapsed, i.e. [0..5, 6..10, 12..15] -> [0..10, 11..15]
+ */
 fun collapseRanges(ranges: List<LongRange>): List<LongRange> {
     val sortedRanges = ranges.sortedBy { it.first }
     val result = sortedRanges.fold(emptyList<LongRange>()) { acc, range ->
@@ -119,31 +122,17 @@ suspend fun <T, R> Iterable<T>.mapAsync(block: suspend (T) -> R): List<R> {
 }
 
 /**
- * Returns if this list contains the given sublist.
+ * Returns all indexes where condition is true for the sublist of the given size.
  */
-fun <T> List<T>.containsSublist(sublist: List<T>): Boolean {
-    return windowed(sublist.size).any { it == sublist }
-}
-
-/**
- * Returns the index of the first occurrence of the given sublist, or -1 if it is not found.
- */
-fun <T> List<T>.indexOfSublist(sublist: List<T>): Int {
-    return windowed(sublist.size).indexOfFirst { it == sublist }
-}
-
-fun <T> List<T>.indexesOfSublist(sublist: List<T>): List<Int> {
-    return windowed(sublist.size).mapIndexedNotNull { index, it ->
-        if (it == sublist) index else null
-    }
-}
-
 fun <T> List<T>.indexesOfSublistsWithCondition(n: Int, condition: (List<T>) -> Boolean): List<Int> {
     return windowed(n).mapIndexedNotNull { index, it ->
         if (condition(it)) index else null
     }
 }
 
+/**
+ * Returns all indexes of elements that match the given condition.
+ */
 fun <T> List<T>.indexesOfCondition(condition: (T) -> Boolean): List<Int> {
     return mapIndexedNotNull { index, it ->
         if (condition(it)) index else null
@@ -179,3 +168,20 @@ fun matrixFromStringList(input: List<String>): List<List<Char>> {
         line.toList()
     }
 }
+
+/**
+ * Repeats this string n times with the given separator.
+ */
+fun String.repeat(n: Int, separator: String = ""): String {
+    return (1..n).joinToString(separator) { this }
+}
+
+/**
+ * Returns the list of values from an iterable of indexed values.
+ */
+fun <T> Iterable<IndexedValue<T>>.values(): List<T> = map { it.value }
+
+/**
+ * Returns the list of indexes from an iterable of indexed values.
+ */
+fun <T> Iterable<IndexedValue<T>>.containsIndex(index: Int): Boolean = any { it.index == index }
