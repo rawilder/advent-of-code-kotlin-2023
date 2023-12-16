@@ -9,8 +9,8 @@ import kotlin.io.path.writeLines
 fun main() {
     // get day of month est since that's when aoc problems are released
     val dayOfMonth = Instant.now().atOffset(ZoneOffset.of("-05:00")).dayOfMonth
-//    val dayOfMonthString = dayOfMonth.toString().padStart(2, '0')
-    val dayOfMonthString = "14"
+    val dayOfMonthString = dayOfMonth.toString().padStart(2, '0')
+//    val dayOfMonthString = "15"
     createKotlinFile(dayOfMonthString)
     createTestInputs(dayOfMonthString)
     createInput(dayOfMonthString)
