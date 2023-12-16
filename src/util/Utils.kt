@@ -37,3 +37,12 @@ val digitStringsToInts = mapOf(
 )
 
 val whitespaceRegex = Regex("\\s+")
+
+/**
+ * runs the block n times
+ */
+fun repeat(n: Long, block: (Long) -> Unit) {
+    for (i in 0 until n) {
+        block(i)
+    }
+}

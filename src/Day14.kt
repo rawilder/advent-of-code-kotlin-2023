@@ -2,33 +2,11 @@ import util.file.readInput
 import util.geometry.Direction
 import util.geometry.Point
 import util.println
+import util.repeat
 import util.shouldBe
-import kotlin.math.max
 import kotlin.time.measureTime
 
-object Metrics {
-    var tiltMeasureCount = 0
-    var tiltAverage = 0L
-
-    val label = javax.swing.JLabel()
-    val frame = javax.swing.JFrame().apply {
-        add(label)
-        pack()
-        setSize(200, 200)
-        isVisible = true
-    }
-
-
-    fun updateRollingAverage(tiltMeasure: Long) {
-        tiltAverage = ((tiltAverage * (max(tiltMeasureCount, 1))) + tiltMeasure) / (++tiltMeasureCount)
-        label.text = "tilt: $tiltAverage"
-        frame.repaint()
-    }
-
-}
-
 fun main() {
-
     fun part1(input: List<String>): Long {
         val rockMap = RockMap.fromInput(input)
 //        println(rockMap)
@@ -37,11 +15,12 @@ fun main() {
         return rockMap.load()
     }
 
-    fun part2(input: List<String>): Int {
+    fun part2(input: List<String>): Long {
         val rockMap = RockMap.fromInput(input)
-        println(rockMap)
-        rockMap.cycle(100_000_000_000)
-        return rockMap.map.values.count { it == RockType.ROUND }
+//        println(rockMap)
+        rockMap.cycle(1_000_000_000)
+        println(rockMap.toStringWithLoad())
+        return rockMap.load()
     }
 
     // test if implementation meets criteria from the description, like:
@@ -51,77 +30,79 @@ fun main() {
 
     val input = readInput("Day14")
     part1(input).println()
-//    part2(input).println()
+    part2(input).println()
 }
 
 data class RockMap(
     var map: MutableMap<Point, RockType>
 ) {
 
+    private val stateTracker: MutableSet<Pair<Direction, Map<Point, RockType>>> = mutableSetOf()
+
     private fun roundRocks(): List<Point> {
         return map.filter { it.value == RockType.ROUND }.keys.toList()
     }
 
-    val maxX = map.keys.maxByOrNull { it.x }!!.x
-    val maxY = map.keys.maxByOrNull { it.y }!!.y
-
-    private data class TiltCacheKey(
-        val roundRocksHashCode: Int,
-        val direction: Direction
-    )
-    private val tiltCache = mutableMapOf<TiltCacheKey, List<Point>>()
+    private val maxX = map.keys.maxByOrNull { it.x }!!.x
+    private val maxY = map.keys.maxByOrNull { it.y }!!.y
 
     fun tilt(direction: Direction) {
+        val ordering = when (direction) {
+            Direction.NORTH -> Comparator<Point> { p1, p2 -> p1.compareTo(p2) }
+            Direction.SOUTH -> Comparator<Point> { p1, p2 -> p2.compareTo(p1) }
+            Direction.WEST -> Comparator<Point> { p1, p2 -> p1.compareTo(p2) }
+            Direction.EAST -> Comparator<Point> { p1, p2 -> p2.compareTo(p1) }
+        }
         measureTime {
-            val cacheKey = TiltCacheKey(map.filter { it.value == RockType.ROUND }.keys.toTypedArray().contentDeepHashCode(), direction)
-            if (tiltCache.containsKey(cacheKey)) {
-//                println("cache hit")
-                tiltCache[cacheKey]!!.forEach { roundRockPoint ->
-                    map = map.filterNot { it.value == RockType.ROUND }.toMutableMap().apply {
-                        this[roundRockPoint] = RockType.ROUND
-                    }
+            var done: Boolean
+            do {
+                done = true
+                map.toSortedMap(ordering).filter { it.value == RockType.ROUND }.forEach { (point, rockType) ->
+                    if (move(point to rockType, direction) && done) done = false
                 }
-            } else {
-                var done: Boolean
-                do {
-                    done = true
-                    map.filter { it.value == RockType.ROUND }.forEach { (point, rockType) ->
-                        if (move(point to rockType, direction) && done) done = false
-                    }
-                } while (!done)
-                tiltCache[cacheKey] = roundRocks()
-//            println(tiltCache.size)
-            }
+            } while (!done)
         }
     }
 
-    private data class CycleCacheKey(
-        val roundRocksHashCode: Int,
-        val direction: Direction
-    )
+    val cycleOrder = listOf(Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST)
 
-    private val cycleCache = mutableMapOf<CycleCacheKey, List<Point>>()
+    fun checkOriginalState(n: Long, iteration: Long, direction: Direction): Boolean {
+        return if ((direction to map) in stateTracker) {
+            println("found start of cycle after $iteration iterations after $direction tilt")
+            val start = map.toMap()
+            cycleOrder.takeLastWhile { it != direction }.forEach { tilt(it) }
+            // cycle starts on SOUTH
+            var cycleLength = 0
+            do {
+                for (dir in cycleOrder) {
+                    tilt(dir)
+                    if (map == start) break
+                }
+                cycleLength += 1
+            } while (map != start)
+            println("found end of cycle with cycle length $cycleLength")
+            val cyclesRemainingAfterN = (n - iteration - cycleLength - 1) % cycleLength
+            cycleOrder.takeLastWhile { it != direction }.forEach {
+                tilt(it)
+            }
+            repeat(cyclesRemainingAfterN) {
+                cycleOrder.forEach { tilt(it) }
+            }
+            true
+        } else {
+            stateTracker.add(direction to map.toMap())
+            false
+        }
+    }
 
     fun cycle(n: Long) {
+        val tiltOrder = listOf(Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST)
         var i = 0L
         while (i < n) {
-            measureTime {
-                val cacheKey = CycleCacheKey(map.filter { it.value == RockType.ROUND }.keys.toTypedArray().contentDeepHashCode(), Direction.NORTH)
-                if (cycleCache.containsKey(cacheKey)) {
-//                    println("cache hit")
-                    cycleCache[cacheKey]!!.forEach { roundRockPoint ->
-                        map = map.filterNot { it.value == RockType.ROUND }.toMutableMap().apply {
-                            this[roundRockPoint] = RockType.ROUND
-                        }
-                    }
-                } else {
-                    tilt(Direction.NORTH)
-                    tilt(Direction.WEST)
-                    tilt(Direction.SOUTH)
-                    tilt(Direction.EAST)
-                    cycleCache[cacheKey] = roundRocks()
-                }
-            }.also { Metrics.updateRollingAverage(it.inWholeNanoseconds) }
+            tiltOrder.forEach {
+                tilt(it)
+                if (checkOriginalState(n, i, it)) return
+            }
             i += 1
         }
     }
@@ -154,10 +135,10 @@ data class RockMap(
     }
 
     fun load(): Long {
-        return map.entries.sumOf { load(it) }
+        return map.entries.sumOf { load(it.toPair()) }
     }
 
-    private fun load(entry: Map.Entry<Point, RockType>): Long {
+    private fun load(entry: Pair<Point, RockType>): Long {
         val (point, rockType) = entry
         return when (rockType) {
             RockType.ROUND -> maxY - point.y + 1
@@ -169,8 +150,23 @@ data class RockMap(
         val sb = StringBuilder()
         for (y in 0..maxY) {
             for (x in 0..maxX) {
-                val rockType = map[Point(x.toLong(), y.toLong())]
+                val rockType = map[Point(x, y)]
                 sb.append(rockType?.toString() ?: '.')
+            }
+            sb.append('\n')
+        }
+        return sb.toString() + "\n"
+    }
+
+    fun toStringWithLoad(): String {
+        val sb = StringBuilder()
+        for (y in 0..maxY) {
+            for (x in 0..maxX) {
+                val rockType = map[Point(x, y)]
+                sb.append(rockType?.let {
+                    if (it == RockType.ROUND) load(Point(x, y) to it).toString()
+                    else it.toString()
+                } ?: '.')
             }
             sb.append('\n')
         }
