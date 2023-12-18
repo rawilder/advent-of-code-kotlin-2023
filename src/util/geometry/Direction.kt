@@ -41,4 +41,16 @@ enum class Direction(val symbol: Char) {
             WEST -> EAST
         }
     }
+
+    companion object {
+        fun fromPoints(source: Point, destination: Point): Direction {
+            return when {
+                source.x == destination.x && source.y > destination.y -> NORTH
+                source.x == destination.x && source.y < destination.y -> SOUTH
+                source.x > destination.x && source.y == destination.y -> WEST
+                source.x < destination.x && source.y == destination.y -> EAST
+                else -> throw IllegalArgumentException("only supports exact directions on the same axis")
+            }
+        }
+    }
 }

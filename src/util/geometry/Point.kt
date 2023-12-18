@@ -10,6 +10,19 @@ data class Point(
         return abs(x - other.x) + abs(y - other.y)
     }
 
+    fun directionTo(other: Point): Direction {
+        return Direction.fromPoints(this, other)
+    }
+
+    fun neighbors(): Set<Point> {
+        return setOf(
+            Point(x + 1, y),
+            Point(x - 1, y),
+            Point(x, y + 1),
+            Point(x, y - 1),
+        )
+    }
+
     operator fun plus(other: Point): Point {
         return Point(x + other.x, y + other.y)
     }
