@@ -41,7 +41,47 @@ data class Point(
         return this + newDirection.movementInAMatrix()
     }
 
+    fun move(newDirection: Direction, magnitude: Long): Point {
+        return this + newDirection.movementInAMatrix(magnitude)
+    }
+
     fun vector(direction: Direction): Vector {
-        return Vector(this, direction)
+        return Vector(this, direction, 1)
+    }
+
+    companion object {
+        /**
+         * Calculates the area of a polygon defined by a list of points.
+         *
+         * This assumes the list is well-ordered, i.e. the order of points goes clockwise or counter-clockwise around the polygon.
+         *
+         * If the last point is not the same as the first point, it will be added to the end of the list.
+         */
+        fun Iterable<Point>.shoelaceArea(): Long {
+            (if (this.first() != this.last()) this + this.first() else this)
+                .zipWithNext()
+                .fold(0.0) { acc, point ->
+                    acc + (point.first.x * point.second.y - point.second.x * point.first.y)
+                }.let {
+                    return abs(it.toLong() / 2)
+                }
+        }
+
+        /**
+         * Calculates the perimeter of a polygon defined by a list of points.
+         *
+         * This assumes the list is well-ordered, i.e. the order of points goes clockwise or counter-clockwise around the polygon.
+         *
+         * If the last point is not the same as the first point, it will be added to the end of the list.
+         */
+        fun Iterable<Point>.perimeter(): Long {
+            (if (this.first() != this.last()) this + this.first() else this)
+                .zipWithNext()
+                .fold(0L) { acc, point ->
+                    acc + point.first.distanceToInAMatrix(point.second)
+                }.let {
+                    return it
+                }
+        }
     }
 }

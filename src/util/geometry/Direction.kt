@@ -7,11 +7,15 @@ enum class Direction(val symbol: Char) {
     WEST('<');
 
     fun movementInAMatrix(): Point {
+        return movementInAMatrix(1)
+    }
+
+    fun movementInAMatrix(magnitude: Long): Point {
         return when (this) {
-            NORTH -> Point(0, -1)
-            SOUTH -> Point(0, 1)
-            EAST -> Point(1, 0)
-            WEST -> Point(-1, 0)
+            NORTH -> Point(0, -magnitude)
+            SOUTH -> Point(0, magnitude)
+            EAST -> Point(magnitude, 0)
+            WEST -> Point(-magnitude, 0)
         }
     }
 
@@ -50,6 +54,16 @@ enum class Direction(val symbol: Char) {
                 source.x > destination.x && source.y == destination.y -> WEST
                 source.x < destination.x && source.y == destination.y -> EAST
                 else -> throw IllegalArgumentException("only supports exact directions on the same axis")
+            }
+        }
+
+        fun fromString(string: String): Direction {
+            return when (string) {
+                "N", "U" -> NORTH
+                "S", "D" -> SOUTH
+                "E", "R" -> EAST
+                "W", "L" -> WEST
+                else -> throw IllegalArgumentException("Unknown direction: $string")
             }
         }
     }
