@@ -203,3 +203,61 @@ inline fun <T> Iterable<T>.countLong(predicate: (T) -> Boolean): Long {
     for (element in this) if (predicate(element)) ++count
     return count
 }
+
+fun IntRange.size(): Int {
+    return (this.last - this.first + 1)
+}
+
+fun IntRange.intersectAsRange(other: IntRange): IntRange? {
+    return when {
+        this.last < other.first || this.first > other.last -> {
+            null
+        }
+        else -> {
+            val start = maxOf(this.first, other.first)
+            val end = minOf(this.last, other.last)
+            start..end
+        }
+    }
+}
+
+fun List<IntRange>.sizeSum(): Int {
+    return this.fold(0) { acc, range ->
+        acc + range.size()
+    }
+}
+
+fun List<IntRange>.inverse(min: Int, max: Int): List<IntRange> {
+    return this.sortedBy { it.first }.fold(listOf(min..max)) { acc, range ->
+        val newAcc = mutableListOf<IntRange>()
+        acc.forEach { accRange ->
+            when {
+                range.first > accRange.last -> {
+                    newAcc.add(accRange)
+                }
+
+                range.last < accRange.first -> {
+                    newAcc.add(accRange)
+                }
+
+                range.first > accRange.first && range.last < accRange.last -> {
+                    newAcc.add(accRange.first..(range.first - 1))
+                    newAcc.add((range.last + 1)..accRange.last)
+                }
+
+                range.first > accRange.first -> {
+                    newAcc.add(accRange.first..(range.first - 1))
+                }
+
+                range.last < accRange.last -> {
+                    newAcc.add((range.last + 1)..accRange.last)
+                }
+
+                else -> {
+                    // range is entirely within accRange
+                }
+            }
+        }
+        newAcc
+    }
+}

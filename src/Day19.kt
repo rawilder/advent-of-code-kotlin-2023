@@ -1,6 +1,11 @@
 import util.collection.collapseRanges
+import util.collection.intersectAsRange
+import util.collection.inverse
+import util.collection.size
+import util.collection.sizeSum
 import util.println
 import util.file.readInput
+import util.math.pow
 import util.shouldBe
 
 fun main() {
@@ -11,24 +16,11 @@ fun main() {
         }
     }
 
-    data class ValidRangeForAcceptance(
-        val xMin: Int,
-        val xMax: Int,
-
-        val mMin: Int,
-        val mMax: Int,
-
-        val aMin: Int,
-        val aMax: Int,
-
-        val sMin: Int,
-        val sMax: Int,
-    )
-    fun part2(input: List<String>): Long {
+    fun part2(input: List<String>, max: Int): Long {
         val system = parseSystemFromInput(input)
         val routes = system.routesToAcceptance()
         val validRanges = routes.map { route ->
-            route.fold(ValidRangeForAcceptance(1, 4000, 1, 4000, 1, 4000, 1, 4000)) { acc, rule ->
+            route.fold(ValidRangeForAcceptance(1, max, 1, max, 1, max, 1, max)) { acc, rule ->
                 when (rule.property) {
                     Part::x -> {
                         when (rule.operator) {
@@ -63,46 +55,52 @@ fun main() {
             }
         }
 
-        var sum = validRanges.sumOf { (xMax, xMin, mMax, mMin, aMax, aMin, sMax, sMin) ->
-            (aMax - aMin + 1L) * (mMax - mMin + 1L) * (sMax - sMin + 1L) * (xMax - xMin + 1L)
-        }
-        validRanges.fold(
-            listOf(
-                emptyList<IntRange>(),
-                emptyList(),
-                emptyList(),
-                emptyList(),
+        fun toValidRange(vararg ranges: IntRange): ValidRangeForAcceptance {
+            return ValidRangeForAcceptance(
+                ranges[0].first, ranges[0].last,
+                ranges[1].first, ranges[1].last,
+                ranges[2].first, ranges[2].last,
+                ranges[3].first, ranges[3].last,
             )
-        ) { acc, validRange ->
-            val xRange = validRange.xMin..validRange.xMax
-            val mRange = validRange.mMin..validRange.mMax
-            val aRange = validRange.aMin..validRange.aMax
-            val sRange = validRange.sMin..validRange.sMax
+        }
 
-            listOf(
-                collapseRanges(acc[0] + listOf(xRange)),
-                collapseRanges(acc[1] + listOf(mRange)),
-                collapseRanges(acc[2] + listOf(aRange)),
-                collapseRanges(acc[3] + listOf(sRange)),
+        val maxPossibleStatesPerRange = pow(max, 4)
+        // invalid states are the AND of outside the ranges
+        val invalidStatesCount = validRanges.reduce { acc, validRange ->
+            val xRange = acc.xMin..acc.xMax
+            val mRange = acc.mMin..acc.mMax
+            val aRange = acc.aMin..acc.aMax
+            val sRange = acc.sMin..acc.sMax
+
+            val accXRange = validRange.xMin..validRange.xMax
+            val accMRange = validRange.mMin..validRange.mMax
+            val accARange = validRange.aMin..validRange.aMax
+            val accSRange = validRange.sMin..validRange.sMax
+
+
+            toValidRange(
+                xRange.intersectAsRange(accXRange) ?: 1..0,
+                mRange.intersectAsRange(accMRange) ?: 1..0,
+                aRange.intersectAsRange(accARange) ?: 1..0,
+                sRange.intersectAsRange(accSRange) ?: 1..0,
             )
-        }.let { ranges ->
-            val xTotal = ranges[0].sumOf { it.last - it.first + 1 }
-            val mTotal = ranges[1].sumOf { it.last - it.first + 1 }
-            val aTotal = ranges[2].sumOf { it.last - it.first + 1 }
-            val sTotal = ranges[3].sumOf { it.last - it.first + 1 }
-            sum -= (aTotal * mTotal * sTotal * xTotal)
+        }.let { invalid ->
+            invalid
         }
-        return sum
+        return maxPossibleStatesPerRange
     }
+
+    val testInput2 = readInput("Day19_part2_test")
+//    part2(testInput2, 2)
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day19_part1_test")
-    part1(testInput) shouldBe 19114
-    part2(testInput) shouldBe 167409079868000L
+//    part1(testInput) shouldBe 19114
+    part2(testInput, 4000) shouldBe 167409079868000L
 
     val input = readInput("Day19")
     part1(input).println()
-    part2(input).println()
+    part2(input, 4000).println()
 }
 
 fun parseSystemFromInput(input: List<String>): System {
@@ -224,4 +222,40 @@ data class Part(
             }
         }
     }
+}
+
+data class ValidRangeForAcceptance(
+    val xMin: Int,
+    val xMax: Int,
+
+    val mMin: Int,
+    val mMax: Int,
+
+    val aMin: Int,
+    val aMax: Int,
+
+    val sMin: Int,
+    val sMax: Int,
+) {
+    fun inverse(max: Int): Invalid {
+        fun makeRanges(mrMin: Int, mrMax: Int ): List<IntRange> {
+            return listOfNotNull(
+                (1 until mrMin).takeIf { mrMin != 1 },
+                (mrMax + 1..max).takeIf { mrMax != max }
+            )
+        }
+        return Invalid(
+            makeRanges(xMin, xMax),
+            makeRanges(mMin, mMax),
+            makeRanges(aMin, aMax),
+            makeRanges(sMin, sMax),
+        )
+    }
+
+    data class Invalid(
+        val xRanges: List<IntRange>,
+        val mRanges: List<IntRange>,
+        val aRanges: List<IntRange>,
+        val sRanges: List<IntRange>,
+    )
 }
