@@ -108,6 +108,17 @@ fun collapseRanges(ranges: List<LongRange>): List<LongRange> {
     return result
 }
 
+@JvmName("intCollapseRanges")
+fun collapseRanges(ranges: List<IntRange>): List<IntRange> {
+    return collapseRanges(
+        ranges.map {
+            it.first.toLong()..it.last.toLong()
+        }
+    ).map {
+        it.first.toInt()..it.last.toInt()
+    }
+}
+
 /**
  * Maps in parallel using the default dispatcher.
  */
@@ -185,3 +196,10 @@ fun <T> Iterable<IndexedValue<T>>.values(): List<T> = map { it.value }
  * Returns the list of indexes from an iterable of indexed values.
  */
 fun <T> Iterable<IndexedValue<T>>.containsIndex(index: Int): Boolean = any { it.index == index }
+
+inline fun <T> Iterable<T>.countLong(predicate: (T) -> Boolean): Long {
+    if (this is Collection && isEmpty()) return 0
+    var count = 0L
+    for (element in this) if (predicate(element)) ++count
+    return count
+}
