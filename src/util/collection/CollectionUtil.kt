@@ -221,43 +221,26 @@ fun IntRange.intersectAsRange(other: IntRange): IntRange? {
     }
 }
 
-fun List<IntRange>.sizeSum(): Int {
-    return this.fold(0) { acc, range ->
-        acc + range.size()
-    }
-}
-
-fun List<IntRange>.inverse(min: Int, max: Int): List<IntRange> {
-    return this.sortedBy { it.first }.fold(listOf(min..max)) { acc, range ->
-        val newAcc = mutableListOf<IntRange>()
-        acc.forEach { accRange ->
-            when {
-                range.first > accRange.last -> {
-                    newAcc.add(accRange)
-                }
-
-                range.last < accRange.first -> {
-                    newAcc.add(accRange)
-                }
-
-                range.first > accRange.first && range.last < accRange.last -> {
-                    newAcc.add(accRange.first..(range.first - 1))
-                    newAcc.add((range.last + 1)..accRange.last)
-                }
-
-                range.first > accRange.first -> {
-                    newAcc.add(accRange.first..(range.first - 1))
-                }
-
-                range.last < accRange.last -> {
-                    newAcc.add((range.last + 1)..accRange.last)
-                }
-
-                else -> {
-                    // range is entirely within accRange
-                }
-            }
+/**
+ * Returns the combinations of the two lists with the given size.
+ *
+ * i.e. listOf(1, 2).combinations(listOf(1, 2), size = 2) -> [[1, 1], [1, 2], [2, 2]]
+ */
+fun <T> Iterable<T>.combinations(size: Int): Sequence<List<T>> {
+    return sequence {
+        val pool = this@combinations as? List<T> ?: toList()
+        val n = pool.size
+        if (size > n) return@sequence
+        val indices = IntArray(size) { it }
+        while (true) {
+            yield(indices.map { pool[it] })
+            var i = size
+            do {
+                i--
+                if (i == -1) return@sequence
+            } while (indices[i] == i + n - size)
+            indices[i]++
+            for (j in i + 1 until size) indices[j] = indices[j - 1] + 1
         }
-        newAcc
     }
 }

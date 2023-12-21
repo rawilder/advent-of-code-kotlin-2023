@@ -1,11 +1,8 @@
-import util.collection.collapseRanges
+import util.collection.combinations
 import util.collection.intersectAsRange
-import util.collection.inverse
 import util.collection.size
-import util.collection.sizeSum
-import util.println
 import util.file.readInput
-import util.math.pow
+import util.println
 import util.shouldBe
 
 fun main() {
@@ -20,78 +17,62 @@ fun main() {
         val system = parseSystemFromInput(input)
         val routes = system.routesToAcceptance()
         val validRanges = routes.map { route ->
-            route.fold(ValidRangeForAcceptance(1, max, 1, max, 1, max, 1, max)) { acc, rule ->
+            route.fold(ValidRangeForAcceptance(1..max, 1..max, 1..max, 1..max)) { acc, (workflowId, rule) ->
                 when (rule.property) {
-                    Part::x -> {
-                        when (rule.operator) {
-                            "<" -> acc.copy(xMax = minOf(acc.xMax, rule.value - 1))
-                            ">" -> acc.copy(xMin = maxOf(acc.xMin, rule.value + 1))
-                            else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+                    Part::x, Part::m, Part::a, Part::s -> {
+                        acc.withRule(rule)
+                    }
+                    else -> {
+                        val workflow = system.workflows[workflowId]!!
+                        workflow.rules.filter { it.operator.isNotBlank() }.fold(acc) { workflowAcc, workflowRule ->
+                            workflowAcc.withRule(workflowRule.copy(
+                                operator = if (workflowRule.operator == "<") ">" else "<",
+                                value = workflowRule.value + (if (workflowRule.operator == "<") -1 else 1)
+                            ))
                         }
                     }
-                    Part::m -> {
-                        when (rule.operator) {
-                            "<" -> acc.copy(mMax = minOf(acc.mMax, rule.value - 1))
-                            ">" -> acc.copy(mMin = maxOf(acc.mMin, rule.value + 1))
-                            else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
-                        }
-                    }
-                    Part::a -> {
-                        when (rule.operator) {
-                            "<" -> acc.copy(aMax = minOf(acc.aMax, rule.value - 1))
-                            ">" -> acc.copy(aMin = maxOf(acc.aMin, rule.value + 1))
-                            else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
-                        }
-                    }
-                    Part::s -> {
-                        when (rule.operator) {
-                            "<" -> acc.copy(sMax = minOf(acc.sMax, rule.value - 1))
-                            ">" -> acc.copy(sMin = maxOf(acc.sMin, rule.value + 1))
-                            else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
-                        }
-                    }
-                    else -> acc
                 }
             }
         }
 
-        fun toValidRange(vararg ranges: IntRange): ValidRangeForAcceptance {
-            return ValidRangeForAcceptance(
-                ranges[0].first, ranges[0].last,
-                ranges[1].first, ranges[1].last,
-                ranges[2].first, ranges[2].last,
-                ranges[3].first, ranges[3].last,
-            )
+        routes.forEachIndexed { idx, route ->
+            route.forEach {
+                if (it.second.operator.isBlank()) {
+                    print("${it.first}{default} -> ")
+                } else {
+                    print("${it.first}{${it.second.property.string()}${it.second.operator}${it.second.value}} -> ")
+                }
+            }
+            print("A")
+            println()
+            validRanges[idx].also {
+                println("${it.xRange},")
+                println("${it.mRange},")
+                println("${it.aRange},")
+                println("${it.sRange}")
+                println()
+            }
         }
 
-        val maxPossibleStatesPerRange = pow(max, 4)
-        // invalid states are the AND of outside the ranges
-        val invalidStatesCount = validRanges.reduce { acc, validRange ->
-            val xRange = acc.xMin..acc.xMax
-            val mRange = acc.mMin..acc.mMax
-            val aRange = acc.aMin..acc.aMax
-            val sRange = acc.sMin..acc.sMax
-
-            val accXRange = validRange.xMin..validRange.xMax
-            val accMRange = validRange.mMin..validRange.mMax
-            val accARange = validRange.aMin..validRange.aMax
-            val accSRange = validRange.sMin..validRange.sMax
-
-
-            toValidRange(
-                xRange.intersectAsRange(accXRange) ?: 1..0,
-                mRange.intersectAsRange(accMRange) ?: 1..0,
-                aRange.intersectAsRange(accARange) ?: 1..0,
-                sRange.intersectAsRange(accSRange) ?: 1..0,
-            )
-        }.let { invalid ->
-            invalid
+        val sumWithDupes = validRanges.sumOf { validRange ->
+            validRange.numCombinations()
+            // (aMax - aMin + 1L) * (mMax - mMin + 1L) * (sMax - sMin + 1L) * (xMax - xMin + 1L)
         }
-        return maxPossibleStatesPerRange
+
+        val dupes = validRanges.combinations(2).sumOf { (comboFirst, comboSecond) ->
+            ValidRangeForAcceptance(
+                comboFirst.xRange.intersectAsRange(comboSecond.xRange) ?: 1..0,
+                comboFirst.mRange.intersectAsRange(comboSecond.mRange) ?: 1..0,
+                comboFirst.aRange.intersectAsRange(comboSecond.aRange) ?: 1..0,
+                comboFirst.sRange.intersectAsRange(comboSecond.sRange) ?: 1..0,
+            ).numCombinations()
+        }
+
+        return sumWithDupes - dupes
     }
 
-    val testInput2 = readInput("Day19_part2_test")
-//    part2(testInput2, 2)
+//    val testInput2 = readInput("Day19_part2_test")
+//    part2(testInput2, 2) shouldBe 1
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day19_part1_test")
@@ -129,8 +110,8 @@ data class System(
         return accepted.toList()
     }
 
-    fun routesToAcceptance(): List<List<Rule>> {
-        return routesToAcceptanceRecursive("in")
+    fun routesToAcceptance(): List<List<Pair<WorkflowId, Rule>>> {
+        return routesToAcceptanceRecursiveWorkflowId("in")
     }
 
     private fun routesToAcceptanceRecursive(workflowId: WorkflowId): List<List<Rule>> {
@@ -140,6 +121,19 @@ data class System(
                 "A" -> listOf(listOf(it))
                 "R" -> listOf()
                 else -> routesToAcceptanceRecursive(it.sendTo).map { route -> listOf(it) + route }
+            }
+        }
+    }
+
+    private fun routesToAcceptanceRecursiveWorkflowId(workflowId: WorkflowId): List<List<Pair<WorkflowId, Rule>>> {
+        val rules = workflows[workflowId]!!.rules
+        return rules.flatMap { rule ->
+            when (rule.sendTo) {
+                "A" -> listOf(listOf(workflowId to rule))
+                "R" -> listOf()
+                else -> {
+                    routesToAcceptanceRecursiveWorkflowId(rule.sendTo).map { route -> listOf(workflowId to rule) + route }
+                }
             }
         }
     }
@@ -225,37 +219,57 @@ data class Part(
 }
 
 data class ValidRangeForAcceptance(
-    val xMin: Int,
-    val xMax: Int,
-
-    val mMin: Int,
-    val mMax: Int,
-
-    val aMin: Int,
-    val aMax: Int,
-
-    val sMin: Int,
-    val sMax: Int,
+    val xRange: IntRange,
+    val mRange: IntRange,
+    val aRange: IntRange,
+    val sRange: IntRange,
 ) {
-    fun inverse(max: Int): Invalid {
-        fun makeRanges(mrMin: Int, mrMax: Int ): List<IntRange> {
-            return listOfNotNull(
-                (1 until mrMin).takeIf { mrMin != 1 },
-                (mrMax + 1..max).takeIf { mrMax != max }
-            )
-        }
-        return Invalid(
-            makeRanges(xMin, xMax),
-            makeRanges(mMin, mMax),
-            makeRanges(aMin, aMax),
-            makeRanges(sMin, sMax),
-        )
+
+    fun numCombinations(): Long {
+        return (xRange.size().toLong() * mRange.size().toLong() * aRange.size().toLong() * sRange.size().toLong())
     }
 
-    data class Invalid(
-        val xRanges: List<IntRange>,
-        val mRanges: List<IntRange>,
-        val aRanges: List<IntRange>,
-        val sRanges: List<IntRange>,
-    )
+    fun withRule(rule: Rule): ValidRangeForAcceptance {
+        return when (rule.property) {
+            Part::x -> {
+                when (rule.operator) {
+                    "<" -> copy(xRange = xRange.first..minOf(xRange.last, rule.value - 1))
+                    ">" -> copy(xRange = maxOf(xRange.first, rule.value + 1)..xRange.last)
+                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+                }
+            }
+            Part::m -> {
+                when (rule.operator) {
+                    "<" -> copy(mRange = mRange.first..minOf(mRange.last, rule.value - 1))
+                    ">" -> copy(mRange = maxOf(mRange.first, rule.value + 1)..mRange.last)
+                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+                }
+            }
+            Part::a -> {
+                when (rule.operator) {
+                    "<" -> copy(aRange = aRange.first..minOf(aRange.last, rule.value - 1))
+                    ">" -> copy(aRange = maxOf(aRange.first, rule.value + 1)..aRange.last)
+                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+                }
+            }
+            Part::s -> {
+                when (rule.operator) {
+                    "<" -> copy(sRange = sRange.first..minOf(sRange.last, rule.value - 1))
+                    ">" -> copy(sRange = maxOf(sRange.first, rule.value + 1)..sRange.last)
+                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+                }
+            }
+            else -> throw IllegalArgumentException("Unknown property ${rule.property}")
+        }
+    }
+}
+
+fun (Part.() -> Int).string(): String {
+    return when (this) {
+        Part::x -> "x"
+        Part::m -> "m"
+        Part::a -> "a"
+        Part::s -> "s"
+        else -> throw IllegalArgumentException("Unknown property $this")
+    }
 }
