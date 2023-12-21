@@ -6,6 +6,7 @@ data class Point(
     val x: Long,
     val y: Long,
 ): Comparable<Point> {
+    constructor(x: Int, y: Int): this(x.toLong(), y.toLong())
     fun distanceToInAMatrix(other: Point): Long {
         return abs(x - other.x) + abs(y - other.y)
     }
@@ -82,6 +83,34 @@ data class Point(
                 }.let {
                     return it
                 }
+        }
+
+        fun Collection<Point>.dijkstras(start: Point): Map<Point, Int> {
+            tailrec fun dijkstrasDistancesRecursive(
+                distances: Map<Point, Int>,
+                unvisited: Set<Point>
+            ): Map<Point, Int> {
+                val current = unvisited.minByOrNull { distances[it] ?: Int.MAX_VALUE }
+                if (current == null) {
+                    return distances
+                } else {
+                    val currentDistance = distances[current] ?: Int.MAX_VALUE
+                    val currentNeighbors = current.neighbors().filter(unvisited::contains)
+                    val newDistances = distances + currentNeighbors.mapNotNull { position ->
+                        val neighborDistance = distances[position] ?: Int.MAX_VALUE
+                        val newDistance = currentDistance + 1
+                        if (newDistance < neighborDistance) {
+                            position to newDistance
+                        } else null
+                    }.toMap()
+                    return dijkstrasDistancesRecursive(
+                        newDistances,
+                        unvisited - current
+                    )
+                }
+            }
+
+            return dijkstrasDistancesRecursive(mapOf(start to 0), this.toSet())
         }
     }
 }

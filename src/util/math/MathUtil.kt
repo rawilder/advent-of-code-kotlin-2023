@@ -43,3 +43,15 @@ fun pow(base: Int, exponent: Int): Long {
 fun Long.lcm(other: Long): Long {
     return this * other / this.gcd(other)
 }
+
+operator fun Long.plus(other: Int?): Long {
+    return this + (other ?: 0)
+}
+
+operator fun Int.plus(other: Int?): Int {
+    return this + (other ?: 0)
+}
+
+operator fun Long.plus(other: Long?): Long {
+    return this + (other ?: 0)
+}
