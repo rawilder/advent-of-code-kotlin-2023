@@ -1,5 +1,5 @@
 import util.geometry.Edge
-import util.geometry.Point
+import util.geometry.Point2D
 import util.println
 import util.file.readInput
 import util.shouldBe
@@ -43,7 +43,7 @@ fun main() {
 }
 
 data class GalaxyMap(
-    val galaxies: List<Point>
+    val galaxies: List<Point2D>
 ) {
 
     fun shortestPaths(): Map<Edge, Long> {
@@ -63,7 +63,7 @@ data class GalaxyMap(
     fun withEmptySpaceExpandedTo(size: Int): GalaxyMap {
         data class Expand(val accumulatedSize: Long = 0, val results: Map<Long, Long> = emptyMap())
 
-        fun expandedValues(property: Point.() -> Long): Map<Long, Long> {
+        fun expandedValues(property: Point2D.() -> Long): Map<Long, Long> {
             return galaxies.map { it.property() }.distinct().sorted().fold(Expand()) { acc, nextOriginal ->
                 // handle first row being empty
                 val prevOriginal = acc.results.keys.lastOrNull() ?: -1
@@ -92,7 +92,7 @@ data class GalaxyMap(
                 val noGalaxyInRow = galaxies.none { it.y == y.toLong() }
                 val noGalaxyInColumn = galaxies.none { it.x == x.toLong() }
                 when {
-                    Point(x.toLong(), y.toLong()) in galaxies -> '#'
+                    Point2D(x.toLong(), y.toLong()) in galaxies -> '#'
                     noGalaxyInRow || noGalaxyInColumn -> 'O'
                     else -> '.'
                 }
@@ -107,7 +107,7 @@ data class GalaxyMap(
             return GalaxyMap(
                 input.mapIndexed { y, line ->
                     line.mapIndexedNotNull { x, char ->
-                        if (char == '#') Point(x.toLong(), y.toLong()) else null
+                        if (char == '#') Point2D(x.toLong(), y.toLong()) else null
                     }
                 }.flatten()
             )

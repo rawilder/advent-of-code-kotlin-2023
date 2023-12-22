@@ -1,9 +1,9 @@
 import util.println
 import util.file.readInput
 import util.geometry.Direction
-import util.geometry.Point
-import util.geometry.Point.Companion.perimeter
-import util.geometry.Point.Companion.shoelaceArea
+import util.geometry.Point2D
+import util.geometry.Point2D.Companion.perimeter
+import util.geometry.Point2D.Companion.shoelaceArea
 import util.geometry.Vector
 import util.shouldBe
 
@@ -49,7 +49,7 @@ data class TrenchMap(
 
         return (minY..maxY).joinToString("\n") { y ->
             (minX..maxX).joinToString("") { x ->
-                val any = edgeToColor.keys.find { it.source == Point(x, y) }
+                val any = edgeToColor.keys.find { it.source == Point2D(x, y) }
                 (any?.let { '#' } ?: '.').toString()
             }
         } + "\n"
@@ -63,7 +63,7 @@ data class TrenchMap(
                 val direction = Direction.fromString(directionString)
                 val magnitude = magnitudeString.toLong()
                 if (acc.isEmpty()) {
-                    listOf(Vector(Point(0, 0), direction, magnitude) to colorString)
+                    listOf(Vector(Point2D(0, 0), direction, magnitude) to colorString)
                 } else {
                     val (lastVector, _) = acc.last()
                     val newVector = Vector(lastVector.destination, direction, magnitude)
@@ -87,7 +87,7 @@ data class TrenchMap(
                 val direction = Direction.fromString(directionString)
                 val magnitude = colorString.drop(1).take(5).toLong(16)
                 if (acc.isEmpty()) {
-                    listOf(Vector(Point(0, 0), direction, magnitude) to colorString)
+                    listOf(Vector(Point2D(0, 0), direction, magnitude) to colorString)
                 } else {
                     val (lastVector, _) = acc.last()
                     val newVector = Vector(lastVector.destination, direction, magnitude)

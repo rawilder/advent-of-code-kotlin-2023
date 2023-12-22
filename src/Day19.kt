@@ -1,11 +1,18 @@
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import util.collection.combinations
 import util.collection.intersectAsRange
 import util.collection.size
 import util.file.readInput
 import util.println
 import util.shouldBe
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-fun main() {
+suspend fun main() {
     fun part1(input: List<String>): Int {
         val system = parseSystemFromInput(input)
         return system.acceptedParts().sumOf {
@@ -13,11 +20,11 @@ fun main() {
         }
     }
 
-    fun part2(input: List<String>, max: Int): Long {
+    suspend fun part2(input: List<String>, max: Int): Long {
         val system = parseSystemFromInput(input)
         val routes = system.routesToAcceptance()
         val validRanges = routes.map { route ->
-            route.fold(ValidRangeForAcceptance(1..max, 1..max, 1..max, 1..max)) { acc, (workflowId, rule) ->
+            route.fold(PartRanges(1..max, 1..max, 1..max, 1..max)) { acc, (workflowId, rule) ->
                 when (rule.property) {
                     Part::x, Part::m, Part::a, Part::s -> {
                         acc.withRule(rule)
@@ -35,40 +42,33 @@ fun main() {
             }
         }
 
-        routes.forEachIndexed { idx, route ->
-            route.forEach {
-                if (it.second.operator.isBlank()) {
-                    print("${it.first}{default} -> ")
-                } else {
-                    print("${it.first}{${it.second.property.string()}${it.second.operator}${it.second.value}} -> ")
+        val mathSum = validRanges.sumOf { validRanges ->
+            validRanges.numCombinations()
+        }
+
+        val coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default)
+
+        val dupeCount = AtomicLong(0)
+        var lock = CompletableDeferred<Unit>()
+        val visited = ConcurrentHashMap.newKeySet<PartRanges>()
+        validRanges.forEachIndexed { index, partRanges ->
+            partRanges.allCombinations().forEach { part ->
+                if (visited.none { it.contains(part) }) {
+                    coroutineScope.launch {
+                        val counts = countPartsInOtherRanges(index to part, validRanges)
+                        dupeCount.addAndGet(counts.toLong())
+                    }
+                }
+            }.also {
+                visited.add(partRanges)
+                if (index == validRanges.lastIndex) {
+                    lock.complete(Unit)
                 }
             }
-            print("A")
-            println()
-            validRanges[idx].also {
-                println("${it.xRange},")
-                println("${it.mRange},")
-                println("${it.aRange},")
-                println("${it.sRange}")
-                println()
-            }
         }
 
-        val sumWithDupes = validRanges.sumOf { validRange ->
-            validRange.numCombinations()
-            // (aMax - aMin + 1L) * (mMax - mMin + 1L) * (sMax - sMin + 1L) * (xMax - xMin + 1L)
-        }
-
-        val dupes = validRanges.combinations(2).sumOf { (comboFirst, comboSecond) ->
-            ValidRangeForAcceptance(
-                comboFirst.xRange.intersectAsRange(comboSecond.xRange) ?: 1..0,
-                comboFirst.mRange.intersectAsRange(comboSecond.mRange) ?: 1..0,
-                comboFirst.aRange.intersectAsRange(comboSecond.aRange) ?: 1..0,
-                comboFirst.sRange.intersectAsRange(comboSecond.sRange) ?: 1..0,
-            ).numCombinations()
-        }
-
-        return sumWithDupes - dupes
+        lock.await()
+        return mathSum - dupeCount.get()
     }
 
 //    val testInput2 = readInput("Day19_part2_test")
@@ -218,7 +218,7 @@ data class Part(
     }
 }
 
-data class ValidRangeForAcceptance(
+data class PartRanges(
     val xRange: IntRange,
     val mRange: IntRange,
     val aRange: IntRange,
@@ -229,7 +229,7 @@ data class ValidRangeForAcceptance(
         return (xRange.size().toLong() * mRange.size().toLong() * aRange.size().toLong() * sRange.size().toLong())
     }
 
-    fun withRule(rule: Rule): ValidRangeForAcceptance {
+    fun withRule(rule: Rule): PartRanges {
         return when (rule.property) {
             Part::x -> {
                 when (rule.operator) {

@@ -1,7 +1,7 @@
 import util.collection.repeat
 import util.println
 import util.file.readInput
-import util.geometry.Point
+import util.geometry.Point2D
 import util.shouldBe
 import kotlin.math.max
 import kotlin.math.min
@@ -55,7 +55,7 @@ fun main() {
 }
 
 data class AshAndRocks(
-    val map: Map<Point, Tile>
+    val map: Map<Point2D, Tile>
 ) {
     private val maxX = map.keys.maxOfOrNull { it.x }
     private val maxY = map.keys.maxOfOrNull { it.y }
@@ -63,7 +63,7 @@ data class AshAndRocks(
     private val rows = if (maxX == null || maxY == null) emptyList() else
             (0..maxY).map { y ->
                 (0..maxX).map { x ->
-                    requireNotNull(map[Point(x, y)]) {
+                    requireNotNull(map[Point2D(x, y)]) {
                         "No tile found at $x, $y"
                     }
                 }
@@ -71,7 +71,7 @@ data class AshAndRocks(
     private val columns = if (maxX == null || maxY == null) emptyList() else
             (0..maxX).map { x ->
                 (0..maxY).map { y ->
-                    requireNotNull(map[Point(x, y)]) {
+                    requireNotNull(map[Point2D(x, y)]) {
                         "No tile found at $x, $y"
                     }
                 }
@@ -161,7 +161,7 @@ data class AshAndRocks(
                 } else {
                     val y = if (acc.last().map.isEmpty()) 0 else acc.last().maxY!! + 1
                     val map = line.mapIndexed { x, c ->
-                        Point(x.toLong(), y) to Tile.fromSymbol(c)
+                        Point2D(x.toLong(), y) to Tile.fromSymbol(c)
                     }.toMap()
                     acc.dropLast(1) + acc.last().copy(map = acc.last().map + map)
                 }

@@ -208,7 +208,20 @@ fun IntRange.size(): Int {
     return (this.last - this.first + 1)
 }
 
-fun IntRange.intersectAsRange(other: IntRange): IntRange? {
+infix fun IntRange.intersectAsRange(other: IntRange): IntRange? {
+    return when {
+        this.last < other.first || this.first > other.last -> {
+            null
+        }
+        else -> {
+            val start = maxOf(this.first, other.first)
+            val end = minOf(this.last, other.last)
+            start..end
+        }
+    }
+}
+
+infix fun LongRange.intersectAsRange(other: LongRange): LongRange? {
     return when {
         this.last < other.first || this.first > other.last -> {
             null

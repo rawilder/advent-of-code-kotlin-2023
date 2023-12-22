@@ -1,6 +1,6 @@
 import util.file.readInput
 import util.geometry.Direction
-import util.geometry.Point
+import util.geometry.Point2D
 import util.println
 import util.repeat
 import util.shouldBe
@@ -34,12 +34,12 @@ fun main() {
 }
 
 data class RockMap(
-    var map: MutableMap<Point, RockType>
+    var map: MutableMap<Point2D, RockType>
 ) {
 
-    private val stateTracker: MutableSet<Pair<Direction, Map<Point, RockType>>> = mutableSetOf()
+    private val stateTracker: MutableSet<Pair<Direction, Map<Point2D, RockType>>> = mutableSetOf()
 
-    private fun roundRocks(): List<Point> {
+    private fun roundRocks(): List<Point2D> {
         return map.filter { it.value == RockType.ROUND }.keys.toList()
     }
 
@@ -48,10 +48,10 @@ data class RockMap(
 
     fun tilt(direction: Direction) {
         val ordering = when (direction) {
-            Direction.NORTH -> Comparator<Point> { p1, p2 -> p1.compareTo(p2) }
-            Direction.SOUTH -> Comparator<Point> { p1, p2 -> p2.compareTo(p1) }
-            Direction.WEST -> Comparator<Point> { p1, p2 -> p1.compareTo(p2) }
-            Direction.EAST -> Comparator<Point> { p1, p2 -> p2.compareTo(p1) }
+            Direction.NORTH -> Comparator<Point2D> { p1, p2 -> p1.compareTo(p2) }
+            Direction.SOUTH -> Comparator<Point2D> { p1, p2 -> p2.compareTo(p1) }
+            Direction.WEST -> Comparator<Point2D> { p1, p2 -> p1.compareTo(p2) }
+            Direction.EAST -> Comparator<Point2D> { p1, p2 -> p2.compareTo(p1) }
         }
         measureTime {
             var done: Boolean
@@ -107,10 +107,10 @@ data class RockMap(
         }
     }
 
-    private fun move(rock: Pair<Point, RockType>, direction: Direction): Boolean {
+    private fun move(rock: Pair<Point2D, RockType>, direction: Direction): Boolean {
         require(rock.second == RockType.ROUND)
-        val localMove = { toPoint: Point ->
-            map[toPoint] = rock.second
+        val localMove = { toPoint2D: Point2D ->
+            map[toPoint2D] = rock.second
             map.remove(rock.first)
             true
         }
@@ -123,7 +123,7 @@ data class RockMap(
         }
     }
 
-    private fun canMove(rock: Pair<Point, RockType>, direction: Direction): Boolean {
+    private fun canMove(rock: Pair<Point2D, RockType>, direction: Direction): Boolean {
         require(rock.second == RockType.ROUND)
         val newPoint = rock.first + direction.movementInAMatrix()
         if (newPoint.x < 0 || newPoint.x > maxX || newPoint.y < 0 || newPoint.y > maxY) return false
@@ -138,7 +138,7 @@ data class RockMap(
         return map.entries.sumOf { load(it.toPair()) }
     }
 
-    private fun load(entry: Pair<Point, RockType>): Long {
+    private fun load(entry: Pair<Point2D, RockType>): Long {
         val (point, rockType) = entry
         return when (rockType) {
             RockType.ROUND -> maxY - point.y + 1
@@ -150,7 +150,7 @@ data class RockMap(
         val sb = StringBuilder()
         for (y in 0..maxY) {
             for (x in 0..maxX) {
-                val rockType = map[Point(x, y)]
+                val rockType = map[Point2D(x, y)]
                 sb.append(rockType?.toString() ?: '.')
             }
             sb.append('\n')
@@ -162,9 +162,9 @@ data class RockMap(
         val sb = StringBuilder()
         for (y in 0..maxY) {
             for (x in 0..maxX) {
-                val rockType = map[Point(x, y)]
+                val rockType = map[Point2D(x, y)]
                 sb.append(rockType?.let {
-                    if (it == RockType.ROUND) load(Point(x, y) to it).toString()
+                    if (it == RockType.ROUND) load(Point2D(x, y) to it).toString()
                     else it.toString()
                 } ?: '.')
             }
@@ -175,10 +175,10 @@ data class RockMap(
 
     companion object {
         fun fromInput(input: List<String>): RockMap {
-            val map = mutableMapOf<Point, RockType>()
+            val map = mutableMapOf<Point2D, RockType>()
             input.forEachIndexed { y, line ->
                 line.forEachIndexed { x, c ->
-                    if (RockType.charHasRock(c)) map[Point(x.toLong(), y.toLong())] = RockType.fromChar(c)
+                    if (RockType.charHasRock(c)) map[Point2D(x.toLong(), y.toLong())] = RockType.fromChar(c)
                 }
             }
             return RockMap(map)

@@ -1,15 +1,15 @@
 import util.println
 import util.file.readInput
 import util.geometry.Direction
-import util.geometry.Point
+import util.geometry.Point2D
 import util.shouldBe
 
 fun main() {
     fun part1(input: List<String>): Long {
         val city = City.fromInput(input)
         return city.lowestWeightPath(
-            Point(0, 0),
-            Point(city.maxX, city.maxY)
+            Point2D(0, 0),
+            Point2D(city.maxX, city.maxY)
         ) { _, neighborKey ->
             neighborKey.numBlocks <= 3
         }
@@ -18,11 +18,11 @@ fun main() {
     fun part2(input: List<String>): Long {
         val city = City.fromInput(input)
         return city.lowestWeightPath(
-            Point(0, 0),
-            Point(city.maxX, city.maxY)
+            Point2D(0, 0),
+            Point2D(city.maxX, city.maxY)
         ) { currentKey, neighborKey ->
             when {
-                neighborKey.position == Point(city.maxX, city.maxY) -> neighborKey.numBlocks in 4..10
+                neighborKey.position == Point2D(city.maxX, city.maxY) -> neighborKey.numBlocks in 4..10
                 neighborKey.direction == currentKey.direction -> neighborKey.numBlocks <= 10
                 else -> currentKey.numBlocks >= 4
             }
@@ -42,23 +42,23 @@ fun main() {
 }
 
 data class City(
-    val blocks: Map<Point, CityBlock>
+    val blocks: Map<Point2D, CityBlock>
 ) {
 
     val maxX = blocks.keys.maxOf { it.x }
     val maxY = blocks.keys.maxOf { it.y }
 
-    fun lowestWeightPath(source: Point, destination: Point, neighborFilter: (StateKey, StateKey) -> Boolean): Long {
+    fun lowestWeightPath(source: Point2D, destination: Point2D, neighborFilter: (StateKey, StateKey) -> Boolean): Long {
         return aStarSearch(source, destination, neighborFilter)
     }
 
     data class StateKey(
-        val position: Point,
+        val position: Point2D,
         val direction: Direction,
         val numBlocks: Int,
     )
 
-    private fun aStarSearch(source: Point, destination: Point, neighborFilter: (StateKey, StateKey) -> Boolean): Long {
+    private fun aStarSearch(source: Point2D, destination: Point2D, neighborFilter: (StateKey, StateKey) -> Boolean): Long {
         val openSet = mutableSetOf(StateKey(source, Direction.EAST, 0))
         val closedSet = mutableSetOf<StateKey>()
         val cameFrom = mutableMapOf<StateKey, StateKey>()
@@ -110,7 +110,7 @@ data class City(
         throw IllegalStateException("no path found")
     }
 
-    private fun printCity(highlight: Point? = null) {
+    private fun printCity(highlight: Point2D? = null) {
         // Everything after this is in red
         val red = "\u001b[31m"
 
@@ -133,7 +133,7 @@ data class City(
 
     private fun printPathTo(destinationKey: StateKey, cameFrom: Map<StateKey, StateKey>) {
         var current = destinationKey
-        val path = mutableListOf<Point>()
+        val path = mutableListOf<Point2D>()
         while (current in cameFrom) {
             path.add(current.position)
             current = cameFrom.getValue(current)
@@ -151,7 +151,7 @@ data class City(
         println("")
     }
 
-    private fun heuristicCostEstimate(source: Point, destination: Point): Long {
+    private fun heuristicCostEstimate(source: Point2D, destination: Point2D): Long {
         return source.distanceToInAMatrix(destination)
     }
 
@@ -159,13 +159,13 @@ data class City(
         fun fromInput(input: List<String>): City {
             val blocks = input.flatMapIndexed { y, line ->
                 line.mapIndexed { x, char ->
-                    CityBlock(Point(x.toLong(), y.toLong()), char.digitToInt())
+                    CityBlock(Point2D(x.toLong(), y.toLong()), char.digitToInt())
                 }
             }
             return City(blocks.associateBy { it.position })
         }
 
-        private fun printWeights(city: City, totalWeights: Map<Point, Long>) {
+        private fun printWeights(city: City, totalWeights: Map<Point2D, Long>) {
             val maxNumbers = totalWeights.values.maxOf { it.toString().length + 1 }
             city.blocks.keys.sortedBy { it.x }.sortedBy { it.y }.forEach {
                 val weight = totalWeights[it] ?: -1
@@ -182,6 +182,6 @@ data class City(
 }
 
 data class CityBlock(
-    val position: Point,
+    val position: Point2D,
     val weight: Int
 )

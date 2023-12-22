@@ -2,33 +2,33 @@ package util.geometry
 
 import kotlin.math.abs
 
-data class Point(
+data class Point2D(
     val x: Long,
     val y: Long,
-): Comparable<Point> {
+): Comparable<Point2D> {
     constructor(x: Int, y: Int): this(x.toLong(), y.toLong())
-    fun distanceToInAMatrix(other: Point): Long {
+    fun distanceToInAMatrix(other: Point2D): Long {
         return abs(x - other.x) + abs(y - other.y)
     }
 
-    fun directionTo(other: Point): Direction {
+    fun directionTo(other: Point2D): Direction {
         return Direction.fromPoints(this, other)
     }
 
-    fun neighbors(): Set<Point> {
+    fun neighbors(): Set<Point2D> {
         return setOf(
-            Point(x + 1, y),
-            Point(x - 1, y),
-            Point(x, y + 1),
-            Point(x, y - 1),
+            Point2D(x + 1, y),
+            Point2D(x - 1, y),
+            Point2D(x, y + 1),
+            Point2D(x, y - 1),
         )
     }
 
-    operator fun plus(other: Point): Point {
-        return Point(x + other.x, y + other.y)
+    operator fun plus(other: Point2D): Point2D {
+        return Point2D(x + other.x, y + other.y)
     }
 
-    override fun compareTo(other: Point): Int {
+    override fun compareTo(other: Point2D): Int {
         return when {
             y < other.y -> -1
             y > other.y -> 1
@@ -38,11 +38,11 @@ data class Point(
         }
     }
 
-    fun move(newDirection: Direction): Point {
+    fun move(newDirection: Direction): Point2D {
         return this + newDirection.movementInAMatrix()
     }
 
-    fun move(newDirection: Direction, magnitude: Long): Point {
+    fun move(newDirection: Direction, magnitude: Long): Point2D {
         return this + newDirection.movementInAMatrix(magnitude)
     }
 
@@ -58,7 +58,7 @@ data class Point(
          *
          * If the last point is not the same as the first point, it will be added to the end of the list.
          */
-        fun Iterable<Point>.shoelaceArea(): Long {
+        fun Iterable<Point2D>.shoelaceArea(): Long {
             (if (this.first() != this.last()) this + this.first() else this)
                 .zipWithNext()
                 .fold(0.0) { acc, point ->
@@ -75,7 +75,7 @@ data class Point(
          *
          * If the last point is not the same as the first point, it will be added to the end of the list.
          */
-        fun Iterable<Point>.perimeter(): Long {
+        fun Iterable<Point2D>.perimeter(): Long {
             (if (this.first() != this.last()) this + this.first() else this)
                 .zipWithNext()
                 .fold(0L) { acc, point ->
@@ -85,11 +85,11 @@ data class Point(
                 }
         }
 
-        fun Collection<Point>.dijkstras(start: Point): Map<Point, Int> {
+        fun Collection<Point2D>.dijkstras(start: Point2D): Map<Point2D, Int> {
             tailrec fun dijkstrasDistancesRecursive(
-                distances: Map<Point, Int>,
-                unvisited: Set<Point>
-            ): Map<Point, Int> {
+                distances: Map<Point2D, Int>,
+                unvisited: Set<Point2D>
+            ): Map<Point2D, Int> {
                 val current = unvisited.minByOrNull { distances[it] ?: Int.MAX_VALUE }
                 if (current == null) {
                     return distances

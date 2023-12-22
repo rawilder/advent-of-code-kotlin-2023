@@ -6,16 +6,16 @@ enum class Direction(val symbol: Char) {
     EAST('>'),
     WEST('<');
 
-    fun movementInAMatrix(): Point {
+    fun movementInAMatrix(): Point2D {
         return movementInAMatrix(1)
     }
 
-    fun movementInAMatrix(magnitude: Long): Point {
+    fun movementInAMatrix(magnitude: Long): Point2D {
         return when (this) {
-            NORTH -> Point(0, -magnitude)
-            SOUTH -> Point(0, magnitude)
-            EAST -> Point(magnitude, 0)
-            WEST -> Point(-magnitude, 0)
+            NORTH -> Point2D(0, -magnitude)
+            SOUTH -> Point2D(0, magnitude)
+            EAST -> Point2D(magnitude, 0)
+            WEST -> Point2D(-magnitude, 0)
         }
     }
 
@@ -47,7 +47,7 @@ enum class Direction(val symbol: Char) {
     }
 
     companion object {
-        fun fromPoints(source: Point, destination: Point): Direction {
+        fun fromPoints(source: Point2D, destination: Point2D): Direction {
             return when {
                 source.x == destination.x && source.y > destination.y -> NORTH
                 source.x == destination.x && source.y < destination.y -> SOUTH

@@ -1,11 +1,9 @@
 import util.println
 import util.file.readInput
 import util.geometry.Direction
-import util.geometry.Point
-import util.geometry.Point.Companion.dijkstras
-import util.math.plus
+import util.geometry.Point2D
+import util.geometry.Point2D.Companion.dijkstras
 import util.shouldBe
-import util.takeIf
 import kotlin.math.abs
 
 fun main() {
@@ -40,19 +38,19 @@ fun main() {
 }
 
 data class GardenMap(
-    val map: List<Point>,
-    val start: Point
+    val map: List<Point2D>,
+    val start: Point2D
 ) {
     companion object {
         fun fromInput(input: List<String>): GardenMap {
             // # = rock (can't be traversed), . = garden plot (can be), S = starting point
-            return input.foldIndexed(GardenMap(emptyList(), Point(0, 0))) { y, map, line ->
-                val (newPoints, startPoint) = line.foldIndexed(emptyList<Point>() to null as Point?) { x, (points, startPoint), char ->
-                    val newPoint = Point(x, y)
+            return input.foldIndexed(GardenMap(emptyList(), Point2D(0, 0))) { y, map, line ->
+                val (newPoints, startPoint) = line.foldIndexed(emptyList<Point2D>() to null as Point2D?) { x, (points, startPoint), char ->
+                    val newPoint2D = Point2D(x, y)
                     when (char) {
                         '#' -> points to startPoint
-                        '.' -> points + newPoint to startPoint
-                        'S' -> points + newPoint to newPoint
+                        '.' -> points + newPoint2D to startPoint
+                        'S' -> points + newPoint2D to newPoint2D
                         else -> throw IllegalArgumentException("Invalid character $char")
                     }
                 }
@@ -62,29 +60,29 @@ data class GardenMap(
     }
 }
 
-fun Collection<Point>.move(direction: Direction, n: Int): Set<Point> {
+fun Collection<Point2D>.move(direction: Direction, n: Int): Set<Point2D> {
     return move(direction, n.toLong())
 }
 
-fun Collection<Point>.move(direction: Direction, n: Long): Set<Point> {
+fun Collection<Point2D>.move(direction: Direction, n: Long): Set<Point2D> {
     return this.map { it.move(direction, n) }.toSet()
 }
 
-fun Map<Point, Int>.moveKeys(direction: Direction, n: Int): Map<Point, Int> {
+fun Map<Point2D, Int>.moveKeys(direction: Direction, n: Int): Map<Point2D, Int> {
     return moveKeys(direction, n.toLong())
 }
 
-fun Map<Point, Int>.moveKeys(direction: Direction, n: Long): Map<Point, Int> {
+fun Map<Point2D, Int>.moveKeys(direction: Direction, n: Long): Map<Point2D, Int> {
     return this.mapKeys { it.key.move(direction, n) }
 }
 
-fun Map<Point, Int>.plus(other: Map<Point, Int>): Map<Point, Int> {
+fun Map<Point2D, Int>.plus(other: Map<Point2D, Int>): Map<Point2D, Int> {
     return this.toSortedMap().entries.zip(other.toSortedMap().entries).associate {
         it.first.key to (it.first.value + it.second.value)
     }
 }
 
-fun Map<Point, Int>.minus(other: Map<Point, Int>): Map<Point, Int> {
+fun Map<Point2D, Int>.minus(other: Map<Point2D, Int>): Map<Point2D, Int> {
     return this.toSortedMap().entries.zip(other.toSortedMap().entries).associate {
         it.first.key to (it.first.value - it.second.value)
     }
@@ -119,7 +117,7 @@ fun Array<Array<Int?>>.operator(other: Array<Array<Int?>>, operation: (Int?, Int
     }
 }
 
-fun Map<Point, Int>.toGridString(): String {
+fun Map<Point2D, Int>.toGridString(): String {
     val minX = this.keys.minByOrNull { it.x }?.x ?: 0
     val maxX = this.keys.maxByOrNull { it.x }?.x ?: 0
     val minY = this.keys.minByOrNull { it.y }?.y ?: 0
@@ -127,14 +125,14 @@ fun Map<Point, Int>.toGridString(): String {
     val maxDistanceStringLength = (this.values.maxByOrNull { abs(it) }?.toString()?.length ?: 1) + 1
     return (minY..maxY).joinToString("\n") { y ->
         (minX..maxX).joinToString("") { x ->
-            val point = Point(x, y)
-            val distance = this[point]
+            val point2D = Point2D(x, y)
+            val distance = this[point2D]
             distance?.toString()?.padStart(maxDistanceStringLength) ?: " ".repeat(maxDistanceStringLength)
         }
     } + "\n"
 }
 
-fun Map<Point, Int>.diffsFrom(point: Point): Map<Point, Int> {
-    val pointValue = this[point] ?: throw IllegalArgumentException("Point $point not in map")
+fun Map<Point2D, Int>.diffsFrom(point2D: Point2D): Map<Point2D, Int> {
+    val pointValue = this[point2D] ?: throw IllegalArgumentException("Point $point2D not in map")
     return this.mapValues { it.value - pointValue }
 }

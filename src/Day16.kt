@@ -1,7 +1,7 @@
 import util.println
 import util.file.readInput
 import util.geometry.Direction
-import util.geometry.Point
+import util.geometry.Point2D
 import util.geometry.Vector
 import util.shouldBe
 
@@ -9,7 +9,7 @@ fun main() {
     fun part1(input: List<String>): Int {
         val laserMap = LaserMap.fromInput(input)
         println(laserMap)
-        val laserPath = laserMap.energizedTiles(Point(0, 0).vector(Direction.EAST))
+        val laserPath = laserMap.energizedTiles(Point2D(0, 0).vector(Direction.EAST))
         println(laserMap.toString(laserPath))
         return laserPath.size
     }
@@ -32,7 +32,7 @@ fun main() {
 }
 
 data class LaserMap(
-    val elements: Map<Point, LaserMapElement>
+    val elements: Map<Point2D, LaserMapElement>
 ) {
 
     private val minX = elements.keys.minByOrNull { it.x }?.x ?: 0
@@ -40,25 +40,25 @@ data class LaserMap(
     private val minY = elements.keys.minByOrNull { it.y }?.y ?: 0
     private val maxY = elements.keys.maxByOrNull { it.y }?.y ?: 0
 
-    private fun inBounds(point: Point): Boolean {
-        return point.x in minX..maxX && point.y in minY..maxY
+    private fun inBounds(point2D: Point2D): Boolean {
+        return point2D.x in minX..maxX && point2D.y in minY..maxY
     }
 
     fun allPossibleStartingVectors(): Set<Vector> {
         return ((minY..maxY).flatMap { y ->
             listOf(
-                Vector(Point(minX, y), Direction.EAST),
-                Vector(Point(maxX, y), Direction.WEST)
+                Vector(Point2D(minX, y), Direction.EAST),
+                Vector(Point2D(maxX, y), Direction.WEST)
             )
         } + (minX..maxX).flatMap { x ->
             listOf(
-                Vector(Point(x, minY), Direction.SOUTH),
-                Vector(Point(x, maxY), Direction.NORTH)
+                Vector(Point2D(x, minY), Direction.SOUTH),
+                Vector(Point2D(x, maxY), Direction.NORTH)
             )
         }).toSet()
     }
 
-    fun energizedTiles(sourceVector: Vector): Set<Point> {
+    fun energizedTiles(sourceVector: Vector): Set<Point2D> {
         val sourceConsideringElement = elements[sourceVector.source]?.laserInteraction(sourceVector.direction)?.firstOrNull() ?: sourceVector
         val lasers = mutableSetOf(sourceConsideringElement)
         val vectorsToProcess = mutableListOf(sourceConsideringElement)
@@ -73,12 +73,12 @@ data class LaserMap(
         return lasers.map { it.source }.toSet()
     }
 
-    fun toString(energizedTiles: Set<Point>): String {
+    fun toString(energizedTiles: Set<Point2D>): String {
         return (minY..maxY).joinToString("\n") { y ->
             (minX..maxX).joinToString("") { x ->
-                val point = Point(x, y)
-                val element = elements[point]
-                (if (energizedTiles.any { it == point }) {
+                val point2D = Point2D(x, y)
+                val element = elements[point2D]
+                (if (energizedTiles.any { it == point2D }) {
                     '#'
                 } else {
                     element?.symbol ?: ' '
@@ -90,8 +90,8 @@ data class LaserMap(
     override fun toString(): String {
         return (minY..maxY).joinToString("\n") { y ->
             (minX..maxX).joinToString("") { x ->
-                val point = Point(x, y)
-                val element = elements[point]
+                val point2D = Point2D(x, y)
+                val element = elements[point2D]
                 (element?.symbol ?: ' ').toString()
             }
         } + "\n"
@@ -101,7 +101,7 @@ data class LaserMap(
         fun fromInput(input: List<String>): LaserMap {
             val elements = input.mapIndexed { y, line ->
                 line.mapIndexed { x, char ->
-                    Point(x.toLong(), y.toLong()) to LaserMapElement.fromChar(char, x.toLong(), y.toLong())
+                    Point2D(x.toLong(), y.toLong()) to LaserMapElement.fromChar(char, x.toLong(), y.toLong())
                 }
             }.flatten().toMap()
             return LaserMap(elements)
@@ -110,33 +110,33 @@ data class LaserMap(
 }
 
 sealed interface LaserMapElement {
-    val point: Point
+    val point2D: Point2D
     val symbol: Char
 
     fun laserInteraction(direction: Direction): Set<Vector>
 
     companion object {
         fun fromChar(char: Char, x: Long, y: Long): LaserMapElement {
-            val point = Point(x, y)
+            val point2D = Point2D(x, y)
             return when (char) {
-                '.' -> Empty(point)
-                '/' -> ForwardSlashMirror(point)
-                '\\' -> BackwardSlashMirror(point)
-                '|' -> VerticalSplitter(point)
-                '-' -> HorizontalSplitter(point)
+                '.' -> Empty(point2D)
+                '/' -> ForwardSlashMirror(point2D)
+                '\\' -> BackwardSlashMirror(point2D)
+                '|' -> VerticalSplitter(point2D)
+                '-' -> HorizontalSplitter(point2D)
                 else -> throw IllegalArgumentException("Unknown char: $char")
             }
         }
     }
 }
-data class Empty(override val point: Point) : LaserMapElement {
+data class Empty(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '.'
     override fun laserInteraction(direction: Direction): Set<Vector> {
-        return setOf(point.vector(direction))
+        return setOf(point2D.vector(direction))
     }
 }
 
-data class ForwardSlashMirror(override val point: Point) : LaserMapElement {
+data class ForwardSlashMirror(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '/'
     override fun laserInteraction(direction: Direction): Set<Vector> {
         val newDirection = when (direction) {
@@ -145,10 +145,10 @@ data class ForwardSlashMirror(override val point: Point) : LaserMapElement {
             Direction.SOUTH -> Direction.WEST
             Direction.WEST -> Direction.SOUTH
         }
-        return setOf(point.vector(newDirection))
+        return setOf(point2D.vector(newDirection))
     }
 }
-data class BackwardSlashMirror(override val point: Point) : LaserMapElement {
+data class BackwardSlashMirror(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '\\'
     override fun laserInteraction(direction: Direction): Set<Vector> {
         val newDirection = when (direction) {
@@ -157,10 +157,10 @@ data class BackwardSlashMirror(override val point: Point) : LaserMapElement {
             Direction.SOUTH -> Direction.EAST
             Direction.EAST -> Direction.SOUTH
         }
-        return setOf(point.vector(newDirection))
+        return setOf(point2D.vector(newDirection))
     }
 }
-data class VerticalSplitter(override val point: Point) : LaserMapElement {
+data class VerticalSplitter(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '|'
     override fun laserInteraction(direction: Direction): Set<Vector> {
         val newDirections = when (direction) {
@@ -169,10 +169,10 @@ data class VerticalSplitter(override val point: Point) : LaserMapElement {
             Direction.EAST -> listOf(Direction.NORTH, Direction.SOUTH)
             Direction.WEST -> listOf(Direction.NORTH, Direction.SOUTH)
         }
-        return newDirections.map { point.vector(it) }.toSet()
+        return newDirections.map { point2D.vector(it) }.toSet()
     }
 }
-data class HorizontalSplitter(override val point: Point) : LaserMapElement {
+data class HorizontalSplitter(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '-'
     override fun laserInteraction(direction: Direction): Set<Vector> {
         val newDirections = when (direction) {
@@ -181,6 +181,6 @@ data class HorizontalSplitter(override val point: Point) : LaserMapElement {
             Direction.EAST -> listOf(Direction.EAST)
             Direction.WEST -> listOf(Direction.WEST)
         }
-        return newDirections.map { point.vector(it) }.toSet()
+        return newDirections.map { point2D.vector(it) }.toSet()
     }
 }
