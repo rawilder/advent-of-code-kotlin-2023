@@ -1,8 +1,8 @@
 import util.collection.intersectAsRange
-import util.println
 import util.file.readInput
 import util.geometry.Point3D
 import util.geometry.RectangularPrism
+import util.println
 import util.shouldBe
 import java.util.SortedMap
 import java.util.TreeMap
@@ -75,16 +75,110 @@ fun main() {
         }
     }
 
-    fun part2(input: List<String>): Int {
-        return input.size
+    fun part2(input: List<String>): Long {
+        var bricks = fromInput(input)
+        val bricksDeepCopy = fromInput(input)
+        var bricksMoving = true
+        while (bricksMoving) {
+            bricksMoving = false
+            bricks = bricks.entries.fold(TreeMap()) { acc, (z, brickList) ->
+
+                val fallenBricks = brickList.map { brick ->
+                    if (brick.prism.start.z == 1L) {
+                        z to brick
+                    } else {
+                        val bricksBelow = acc.values.flatten()
+                        if (bricksBelow.any { brick.restsOn(it) }) {
+                            z to brick
+                        } else {
+                            bricksMoving = true
+                            brick.fall().let {
+                                it.prism.start.z to it
+                            }
+                        }
+                    }
+                }
+
+                fallenBricks.forEach {
+                    acc.computeIfAbsent(it.first) { emptyList() }.let { list ->
+                        acc[it.first] = list + it.second
+                    }
+                }
+                acc
+            }
+        }
+        require(bricks.keys.zipWithNext().fold(true) { acc, (l, nL) -> acc && (nL - l == 1L) }) { "bricks are not sorted" }
+        bricks.values.flatten().forEach { brick ->
+            bricks.values.flatten().forEach { otherBrick ->
+                require(brick == otherBrick || !brick.intersects(otherBrick)) {
+                    val originalBrick = bricksDeepCopy.values.flatten().find { it.id == brick.id }!!
+                    val originalOtherBrick = bricksDeepCopy.values.flatten().find { it.id == otherBrick.id }!!
+                    "bricks intersect: $brick and $otherBrick, original: $originalBrick and $originalOtherBrick"
+                }
+            }
+        }
+        val topBlockSupportedBy = mutableMapOf<Brick, Set<Brick>>()
+        bricks.entries.forEach { (z, brickList) ->
+            if (z == bricks.lastKey()) return@forEach
+
+            val aboveBricks = bricks.entries.filter { it.key > z }.flatMap { it.value }
+
+            val (_, bottomBricksWithTops) = brickList.partition { bottomBrick ->
+                aboveBricks.none { it.restsOn(bottomBrick) }
+            }
+
+            bottomBricksWithTops.forEach { bottomBrick ->
+                aboveBricks.filter { it.restsOn(bottomBrick) }.forEach { topBrick ->
+                    topBlockSupportedBy[topBrick] = topBlockSupportedBy.getOrDefault(topBrick, emptySet()) + bottomBrick
+                }
+            }
+        }
+        val (topBlocksWith1Support, _) = topBlockSupportedBy.entries.partition { it.value.size == 1 }
+        val bottomBlocksToTopBlocksTheySupportAlone = mutableMapOf<Brick, Set<Brick>>()
+        topBlocksWith1Support.forEach { (topBrick, bottomBricks) ->
+            bottomBricks.forEach { bottomBrick ->
+                bottomBlocksToTopBlocksTheySupportAlone[bottomBrick] = bottomBlocksToTopBlocksTheySupportAlone.getOrDefault(bottomBrick, emptySet()) + topBrick
+            }
+        }
+
+        val bottomBlocksToAllBlocksTheySupport = mutableMapOf<Brick, Set<Brick>>()
+        topBlockSupportedBy.forEach { (topBrick, bottomBricks) ->
+            bottomBricks.forEach { bottomBrick ->
+                bottomBlocksToAllBlocksTheySupport[bottomBrick] = bottomBlocksToAllBlocksTheySupport.getOrDefault(bottomBrick, emptySet()) + topBrick
+            }
+        }
+
+        fun countBricksWhileLoop(brick: Brick): Long {
+            var count = 0L
+            val brickQueue = bottomBlocksToAllBlocksTheySupport[brick]?.toMutableSet() ?: mutableSetOf()
+            val dropped = mutableSetOf<Brick>(brick)
+            while (true) {
+                val currentBrick = brickQueue.firstOrNull() ?: break
+                brickQueue.remove(currentBrick)
+                if (topBlockSupportedBy[currentBrick]?.minus(dropped)?.isNotEmpty() == true) continue
+                dropped.add(currentBrick)
+                count++
+                brickQueue.addAll(bottomBlocksToAllBlocksTheySupport[currentBrick] ?: emptySet())
+            }
+            return count
+        }
+
+        return bottomBlocksToTopBlocksTheySupportAlone.keys.sumOf { bottomBlock ->
+            countBricksWhileLoop(bottomBlock)
+        }
     }
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day22_part1_test")
     part1(testInput) shouldBe 5
+    part2(testInput) shouldBe 7
 
     val input = readInput("Day22")
     part1(input).println()
+    // 1296675 too high
+    //  249831 too high
+    //  153839 not right
+    //   79144
     part2(input).println()
 }
 
