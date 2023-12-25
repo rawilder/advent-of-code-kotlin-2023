@@ -1,16 +1,11 @@
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.launch
+import util.collection.allPossibleCombinations
 import util.collection.combinations
 import util.collection.intersectAsRange
 import util.collection.size
 import util.file.readInput
+import util.math.pow
 import util.println
 import util.shouldBe
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
 
 suspend fun main() {
     fun part1(input: List<String>): Int {
@@ -29,46 +24,37 @@ suspend fun main() {
                     Part::x, Part::m, Part::a, Part::s -> {
                         acc.withRule(rule)
                     }
+
                     else -> {
                         val workflow = system.workflows[workflowId]!!
                         workflow.rules.filter { it.operator.isNotBlank() }.fold(acc) { workflowAcc, workflowRule ->
-                            workflowAcc.withRule(workflowRule.copy(
-                                operator = if (workflowRule.operator == "<") ">" else "<",
-                                value = workflowRule.value + (if (workflowRule.operator == "<") -1 else 1)
-                            ))
+                            workflowAcc.withRule(
+                                workflowRule.copy(
+                                    operator = if (workflowRule.operator == "<") ">" else "<",
+                                    value = workflowRule.value + (if (workflowRule.operator == "<") -1 else 1)
+                                )
+                            )
                         }
                     }
                 }
             }
         }
 
-        val mathSum = validRanges.sumOf { validRanges ->
-            validRanges.numCombinations()
-        }
-
-        val coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default)
-
-        val dupeCount = AtomicLong(0)
-        var lock = CompletableDeferred<Unit>()
-        val visited = ConcurrentHashMap.newKeySet<PartRanges>()
-        validRanges.forEachIndexed { index, partRanges ->
-            partRanges.allCombinations().forEach { part ->
-                if (visited.none { it.contains(part) }) {
-                    coroutineScope.launch {
-                        val counts = countPartsInOtherRanges(index to part, validRanges)
-                        dupeCount.addAndGet(counts.toLong())
-                    }
-                }
-            }.also {
-                visited.add(partRanges)
-                if (index == validRanges.lastIndex) {
-                    lock.complete(Unit)
-                }
+        val dedupedValidRanges = validRanges.withIndex().fold(validRanges.map {
+            PartRanges.Many(listOf(it.xRange), listOf(it.mRange), listOf(it.aRange), listOf(it.sRange))
+        }) { acc, (idx, validRange) ->
+            acc.subList(0, idx + 1) + acc.drop(idx + 1).map {
+                it.minusDuplicatedBounds(validRange.toMany())
             }
         }
 
-        lock.await()
-        return mathSum - dupeCount.get()
+        // 167409079868000
+        // 116808124428000
+        // 15320205000000
+        // 15320207491756
+        return dedupedValidRanges.sumOf {
+            it.numCombinations()
+        }
     }
 
 //    val testInput2 = readInput("Day19_part2_test")
@@ -225,41 +211,136 @@ data class PartRanges(
     val sRange: IntRange,
 ) {
 
+    fun minusDuplicatedBounds(other: PartRanges): PartRanges.Many {
+        val xIntersection = xRange.intersectAsRange(other.xRange)
+        val mIntersection = mRange.intersectAsRange(other.mRange)
+        val aIntersection = aRange.intersectAsRange(other.aRange)
+        val sIntersection = sRange.intersectAsRange(other.sRange)
+        if (xIntersection != null && mIntersection != null && aIntersection != null && sIntersection != null) {
+
+            val xRanges = xRange.minusAsRanges(other.xRange)
+            val mRanges = mRange.minusAsRanges(other.mRange)
+            val aRanges = aRange.minusAsRanges(other.aRange)
+            val sRanges = sRange.minusAsRanges(other.sRange)
+
+            return PartRanges.Many(xRanges, mRanges, aRanges, sRanges)
+        } else {
+            return PartRanges.Many(listOf(xRange), listOf(mRange), listOf(aRange), listOf(sRange))
+        }
+    }
+
     fun numCombinations(): Long {
         return (xRange.size().toLong() * mRange.size().toLong() * aRange.size().toLong() * sRange.size().toLong())
     }
 
+    fun combinations(): List<Part> {
+        return xRange.flatMap { x ->
+            mRange.flatMap { m ->
+                aRange.flatMap { a ->
+                    sRange.map { s ->
+                        Part(x, m, a, s)
+                    }
+                }
+            }
+        }
+    }
+
     fun withRule(rule: Rule): PartRanges {
-        return when (rule.property) {
-            Part::x -> {
-                when (rule.operator) {
-                    "<" -> copy(xRange = xRange.first..minOf(xRange.last, rule.value - 1))
-                    ">" -> copy(xRange = maxOf(xRange.first, rule.value + 1)..xRange.last)
-                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+        return when (rule.operator) {
+            "<" -> {
+                when (rule.property) {
+                    Part::x -> copy(xRange = xRange.first..minOf(xRange.last, rule.value - 1))
+                    Part::m -> copy(mRange = mRange.first..minOf(mRange.last, rule.value - 1))
+                    Part::a -> copy(aRange = aRange.first..minOf(aRange.last, rule.value - 1))
+                    Part::s -> copy(sRange = sRange.first..minOf(sRange.last, rule.value - 1))
+                    else -> throw IllegalArgumentException("Unknown property ${rule.property}")
                 }
             }
-            Part::m -> {
-                when (rule.operator) {
-                    "<" -> copy(mRange = mRange.first..minOf(mRange.last, rule.value - 1))
-                    ">" -> copy(mRange = maxOf(mRange.first, rule.value + 1)..mRange.last)
-                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+            ">" -> {
+                when (rule.property) {
+                    Part::x -> copy(xRange = maxOf(xRange.first, rule.value + 1)..xRange.last)
+                    Part::m -> copy(mRange = maxOf(mRange.first, rule.value + 1)..mRange.last)
+                    Part::a -> copy(aRange = maxOf(aRange.first, rule.value + 1)..aRange.last)
+                    Part::s -> copy(sRange = maxOf(sRange.first, rule.value + 1)..sRange.last)
+                    else -> throw IllegalArgumentException("Unknown property ${rule.property}")
                 }
             }
-            Part::a -> {
-                when (rule.operator) {
-                    "<" -> copy(aRange = aRange.first..minOf(aRange.last, rule.value - 1))
-                    ">" -> copy(aRange = maxOf(aRange.first, rule.value + 1)..aRange.last)
-                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+            else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
+        }
+    }
+
+    fun toMany(): PartRanges.Many {
+        return PartRanges.Many(listOf(xRange), listOf(mRange), listOf(aRange), listOf(sRange))
+    }
+
+    data class Many(
+        val xRanges: List<IntRange>,
+        val mRanges: List<IntRange>,
+        val aRanges: List<IntRange>,
+        val sRanges: List<IntRange>,
+    ) {
+
+        fun minusDuplicatedBounds(other: PartRanges.Many): PartRanges.Many {
+            val xIntersection = xRanges.intersectAsRanges(other.xRanges)
+            val mIntersection = mRanges.intersectAsRanges(other.mRanges)
+            val aIntersection = aRanges.intersectAsRanges(other.aRanges)
+            val sIntersection = sRanges.intersectAsRanges(other.sRanges)
+            if (xIntersection.isNotEmpty() && mIntersection.isNotEmpty() && aIntersection.isNotEmpty() && sIntersection.isNotEmpty()) {
+
+                val dedupedXRanges = xRanges.minusAsRanges(other.xRanges)
+                val dedupedMRanges = mRanges.minusAsRanges(other.mRanges)
+                val dedupedARanges = aRanges.minusAsRanges(other.aRanges)
+                val dedupedSRanges = sRanges.minusAsRanges(other.sRanges)
+
+                return Many(dedupedXRanges, dedupedMRanges, dedupedARanges, dedupedSRanges)
+            } else {
+                return Many(xRanges, mRanges, aRanges, sRanges)
+            }
+        }
+
+        fun numCombinations(): Long {
+            val xSize = xRanges.sumOf { it.size() }
+            val mSize = mRanges.sumOf { it.size() }
+            val aSize = aRanges.sumOf { it.size() }
+            val sSize = sRanges.sumOf { it.size() }
+            return (xSize.toLong() * mSize.toLong() * aSize.toLong() * sSize.toLong())
+        }
+
+        fun combinations(): List<Part> {
+            return xRanges.flatMap { xRange ->
+                mRanges.flatMap { mRange ->
+                    aRanges.flatMap { aRange ->
+                        sRanges.flatMap { sRange ->
+                            xRange.flatMap { x ->
+                                mRange.flatMap { m ->
+                                    aRange.flatMap { a ->
+                                        sRange.map { s ->
+                                            Part(x, m, a, s)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            Part::s -> {
-                when (rule.operator) {
-                    "<" -> copy(sRange = sRange.first..minOf(sRange.last, rule.value - 1))
-                    ">" -> copy(sRange = maxOf(sRange.first, rule.value + 1)..sRange.last)
-                    else -> throw IllegalArgumentException("Unknown operator ${rule.operator}")
-                }
-            }
-            else -> throw IllegalArgumentException("Unknown property ${rule.property}")
+        }
+    }
+}
+
+private fun IntRange.inverse(max: Int): List<IntRange> {
+    return when {
+        this.first == 1 && this.last == max -> {
+            listOf()
+        }
+        this.first == 1 -> {
+            listOf(this.last + 1..max)
+        }
+        this.last == max -> {
+            listOf(1..<this.first)
+        }
+        else -> {
+            listOf(1..<this.first, this.last + 1..max)
         }
     }
 }
@@ -271,5 +352,59 @@ fun (Part.() -> Int).string(): String {
         Part::a -> "a"
         Part::s -> "s"
         else -> throw IllegalArgumentException("Unknown property $this")
+    }
+}
+
+fun Iterable<PartRanges>.intersectAsRange(): PartRanges {
+    return reduce { acc, partRanges ->
+        val xRange = acc.xRange.intersectAsRange(partRanges.xRange) ?: 1..0
+        val mRange = acc.mRange.intersectAsRange(partRanges.mRange) ?: 1..0
+        val aRange = acc.aRange.intersectAsRange(partRanges.aRange) ?: 1..0
+        val sRange = acc.sRange.intersectAsRange(partRanges.sRange) ?: 1..0
+        PartRanges(xRange, mRange, aRange, sRange)
+    }
+}
+
+fun Iterable<IntRange>.intersectAsRanges(other: Iterable<IntRange>): List<IntRange> {
+    return this.flatMap {  first ->
+        other.mapNotNull { second ->
+            first.intersectAsRange(second)
+        }
+    }
+}
+
+fun IntRange.minusAsRanges(other: IntRange): List<IntRange> {
+    return when {
+        this.last < other.first || this.first > other.last -> {
+            listOf(this)
+        }
+        else -> {
+            val start = this.first
+            val end = this.last
+            val otherStart = other.first
+            val otherEnd = other.last
+            when {
+                start < otherStart && end > otherEnd -> {
+                    listOf(start..otherStart, otherEnd + 1..end)
+                }
+                start < otherStart -> {
+                    listOf(start..otherStart)
+                }
+                end > otherEnd -> {
+                    listOf(otherEnd + 1..end)
+                }
+                else -> {
+                    emptyList()
+                }
+            }
+        }
+    }
+}
+
+fun List<IntRange>.minusAsRanges(other: List<IntRange>): List<IntRange> {
+    return this.flatMap { range ->
+        other.fold(listOf(range)) { acc, otherRange ->
+            acc.flatMap { it.minusAsRanges(otherRange) }
+        }
     }
 }

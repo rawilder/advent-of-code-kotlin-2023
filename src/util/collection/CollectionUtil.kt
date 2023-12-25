@@ -258,6 +258,19 @@ fun <T> Iterable<T>.combinations(size: Int): Sequence<List<T>> {
     }
 }
 
+/**
+ * Returns all possible combinations of the elements in this iterable of all sizes.
+ */
+fun <T> Iterable<T>.allPossibleCombinations(min: Int= 1, max: Int? = null): Sequence<List<T>> {
+    return sequence {
+        val pool: List<T> = this@allPossibleCombinations as? List<T> ?: toList()
+        val n = max ?: pool.size
+        for (size in min..n) {
+            yieldAll(pool.combinations(size))
+        }
+    }
+}
+
 fun <T, R> Pair<T, T>.map(block: (T) -> R): Pair<R, R> {
     return block(first) to block(second)
 }
