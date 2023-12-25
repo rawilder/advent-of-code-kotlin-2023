@@ -257,3 +257,7 @@ fun <T> Iterable<T>.combinations(size: Int): Sequence<List<T>> {
         }
     }
 }
+
+fun <T, R> Pair<T, T>.map(block: (T) -> R): Pair<R, R> {
+    return block(first) to block(second)
+}

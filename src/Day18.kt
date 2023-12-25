@@ -4,7 +4,7 @@ import util.geometry.Direction
 import util.geometry.Point2D
 import util.geometry.Point2D.Companion.perimeter
 import util.geometry.Point2D.Companion.shoelaceArea
-import util.geometry.Vector
+import util.geometry.Vector2D
 import util.shouldBe
 
 fun main() {
@@ -30,7 +30,7 @@ fun main() {
 }
 
 data class TrenchMap(
-    val edgeToColor: Map<Vector, String>
+    val edgeToColor: Map<Vector2D, String>
 ) {
 
     val points = edgeToColor.keys.map { it.source }
@@ -58,16 +58,16 @@ data class TrenchMap(
     companion object {
         private val inputRegex = Regex("""([RLDU]) (\d+) \((#[0-9a-f]{6})\)""")
         fun fromInput(input: List<String>): TrenchMap {
-            return input.fold(emptyList<Pair<Vector, String>>()) { acc, line ->
+            return input.fold(emptyList<Pair<Vector2D, String>>()) { acc, line ->
                 val (directionString, magnitudeString, colorString) = inputRegex.matchEntire(line)!!.destructured
                 val direction = Direction.fromString(directionString)
                 val magnitude = magnitudeString.toLong()
                 if (acc.isEmpty()) {
-                    listOf(Vector(Point2D(0, 0), direction, magnitude) to colorString)
+                    listOf(Vector2D(Point2D(0, 0), direction, magnitude) to colorString)
                 } else {
                     val (lastVector, _) = acc.last()
-                    val newVector = Vector(lastVector.destination, direction, magnitude)
-                    acc + (newVector to colorString)
+                    val newVector2D = Vector2D(lastVector.destination, direction, magnitude)
+                    acc + (newVector2D to colorString)
                 }
             }.toMap().let {
                 TrenchMap(it)
@@ -75,7 +75,7 @@ data class TrenchMap(
         }
 
         fun fromInputPart2(input: List<String>): TrenchMap {
-            return input.fold(emptyList<Pair<Vector, String>>()) { acc, line ->
+            return input.fold(emptyList<Pair<Vector2D, String>>()) { acc, line ->
                 val (_, _, colorString) = inputRegex.matchEntire(line)!!.destructured
                 val directionString = when(colorString.takeLast(1)) {
                     "0" -> "R"
@@ -87,11 +87,11 @@ data class TrenchMap(
                 val direction = Direction.fromString(directionString)
                 val magnitude = colorString.drop(1).take(5).toLong(16)
                 if (acc.isEmpty()) {
-                    listOf(Vector(Point2D(0, 0), direction, magnitude) to colorString)
+                    listOf(Vector2D(Point2D(0, 0), direction, magnitude) to colorString)
                 } else {
                     val (lastVector, _) = acc.last()
-                    val newVector = Vector(lastVector.destination, direction, magnitude)
-                    acc + (newVector to colorString)
+                    val newVector2D = Vector2D(lastVector.destination, direction, magnitude)
+                    acc + (newVector2D to colorString)
                 }
             }.toMap().let {
                 TrenchMap(it)

@@ -46,8 +46,8 @@ data class Point2D(
         return this + newDirection.movementInAMatrix(magnitude)
     }
 
-    fun vector(direction: Direction): Vector {
-        return Vector(this, direction, 1)
+    fun vector(direction: Direction): Vector2D {
+        return Vector2D(this, direction, 1)
     }
 
     companion object {

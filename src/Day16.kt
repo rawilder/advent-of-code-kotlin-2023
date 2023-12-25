@@ -2,7 +2,7 @@ import util.println
 import util.file.readInput
 import util.geometry.Direction
 import util.geometry.Point2D
-import util.geometry.Vector
+import util.geometry.Vector2D
 import util.shouldBe
 
 fun main() {
@@ -44,22 +44,22 @@ data class LaserMap(
         return point2D.x in minX..maxX && point2D.y in minY..maxY
     }
 
-    fun allPossibleStartingVectors(): Set<Vector> {
+    fun allPossibleStartingVectors(): Set<Vector2D> {
         return ((minY..maxY).flatMap { y ->
             listOf(
-                Vector(Point2D(minX, y), Direction.EAST),
-                Vector(Point2D(maxX, y), Direction.WEST)
+                Vector2D(Point2D(minX, y), Direction.EAST),
+                Vector2D(Point2D(maxX, y), Direction.WEST)
             )
         } + (minX..maxX).flatMap { x ->
             listOf(
-                Vector(Point2D(x, minY), Direction.SOUTH),
-                Vector(Point2D(x, maxY), Direction.NORTH)
+                Vector2D(Point2D(x, minY), Direction.SOUTH),
+                Vector2D(Point2D(x, maxY), Direction.NORTH)
             )
         }).toSet()
     }
 
-    fun energizedTiles(sourceVector: Vector): Set<Point2D> {
-        val sourceConsideringElement = elements[sourceVector.source]?.laserInteraction(sourceVector.direction)?.firstOrNull() ?: sourceVector
+    fun energizedTiles(sourceVector2D: Vector2D): Set<Point2D> {
+        val sourceConsideringElement = elements[sourceVector2D.source]?.laserInteraction(sourceVector2D.direction)?.firstOrNull() ?: sourceVector2D
         val lasers = mutableSetOf(sourceConsideringElement)
         val vectorsToProcess = mutableListOf(sourceConsideringElement)
         while (vectorsToProcess.isNotEmpty()) {
@@ -113,7 +113,7 @@ sealed interface LaserMapElement {
     val point2D: Point2D
     val symbol: Char
 
-    fun laserInteraction(direction: Direction): Set<Vector>
+    fun laserInteraction(direction: Direction): Set<Vector2D>
 
     companion object {
         fun fromChar(char: Char, x: Long, y: Long): LaserMapElement {
@@ -131,14 +131,14 @@ sealed interface LaserMapElement {
 }
 data class Empty(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '.'
-    override fun laserInteraction(direction: Direction): Set<Vector> {
+    override fun laserInteraction(direction: Direction): Set<Vector2D> {
         return setOf(point2D.vector(direction))
     }
 }
 
 data class ForwardSlashMirror(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '/'
-    override fun laserInteraction(direction: Direction): Set<Vector> {
+    override fun laserInteraction(direction: Direction): Set<Vector2D> {
         val newDirection = when (direction) {
             Direction.NORTH -> Direction.EAST
             Direction.EAST -> Direction.NORTH
@@ -150,7 +150,7 @@ data class ForwardSlashMirror(override val point2D: Point2D) : LaserMapElement {
 }
 data class BackwardSlashMirror(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '\\'
-    override fun laserInteraction(direction: Direction): Set<Vector> {
+    override fun laserInteraction(direction: Direction): Set<Vector2D> {
         val newDirection = when (direction) {
             Direction.NORTH -> Direction.WEST
             Direction.WEST -> Direction.NORTH
@@ -162,7 +162,7 @@ data class BackwardSlashMirror(override val point2D: Point2D) : LaserMapElement 
 }
 data class VerticalSplitter(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '|'
-    override fun laserInteraction(direction: Direction): Set<Vector> {
+    override fun laserInteraction(direction: Direction): Set<Vector2D> {
         val newDirections = when (direction) {
             Direction.NORTH -> listOf(Direction.NORTH)
             Direction.SOUTH -> listOf(Direction.SOUTH)
@@ -174,7 +174,7 @@ data class VerticalSplitter(override val point2D: Point2D) : LaserMapElement {
 }
 data class HorizontalSplitter(override val point2D: Point2D) : LaserMapElement {
     override val symbol: Char = '-'
-    override fun laserInteraction(direction: Direction): Set<Vector> {
+    override fun laserInteraction(direction: Direction): Set<Vector2D> {
         val newDirections = when (direction) {
             Direction.NORTH -> listOf(Direction.WEST, Direction.EAST)
             Direction.SOUTH -> listOf(Direction.WEST, Direction.EAST)

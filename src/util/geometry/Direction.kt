@@ -66,5 +66,16 @@ enum class Direction(val symbol: Char) {
                 else -> throw IllegalArgumentException("Unknown direction: $string")
             }
         }
+
+        fun fromChar(char: Char): Direction {
+            return when (char) {
+                '^' -> NORTH
+                'v' -> SOUTH
+                '>' -> EAST
+                '<' -> WEST
+                else -> throw IllegalArgumentException("Unknown direction: $char")
+            }
+
+        }
     }
 }
