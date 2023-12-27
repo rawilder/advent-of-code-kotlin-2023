@@ -1,9 +1,15 @@
 package util.collection
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Returns a sequence of substrings, stepping by one character, and yielding substrings of the given sizes in the order
@@ -273,4 +279,25 @@ fun <T> Iterable<T>.allPossibleCombinations(min: Int= 1, max: Int? = null): Sequ
 
 fun <T, R> Pair<T, T>.map(block: (T) -> R): Pair<R, R> {
     return block(first) to block(second)
+}
+
+suspend fun <T> List<Deferred<T?>>.awaitFirstNotNullAndCancelRestOrNull(): T? {
+    val total = AtomicInteger(this.size)
+    val result = CompletableDeferred<T?>()
+    CoroutineScope(Dispatchers.Default).launch {
+        forEach { asyncResult ->
+            launch {
+                val value = asyncResult.await()
+                if (value != null) {
+                    result.complete(value)
+                    minus(asyncResult).forEach { it.cancel() }
+                } else {
+                    if (total.decrementAndGet() == 0) {
+                        result.complete(null)
+                    }
+                }
+            }
+        }
+    }
+    return result.await()
 }
